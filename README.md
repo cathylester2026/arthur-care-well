@@ -40,3 +40,5 @@ The SQL grants browser clients INSERT only. They cannot read, edit, or delete te
 2. Add more differentiated disruption reveals based on each exact portfolio.
 3. Add Arthur imagery and transitional scene reveals.
 4. Only after single-player logic is stable, add shared sessions / XPlayer.
+5. end
+6. 
