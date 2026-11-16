@@ -1,44 +1,31 @@
-# Arthur · Care Well — Single Player
+# Arthur · Care Well — single-player replacement (v0.2.0)
 
-A phone-first, static GitHub Pages prototype. It runs without a build step and uses localStorage for game state. Supabase is optional and is used only for append-only play telemetry.
+Drop-in static GitHub Pages app. Replace **all files** in your repository root with the files in this package. No build, no install, no database required.
 
-## What is implemented
-- 3 decisions with 3 options each
-- Capital / Change / Operations constraints
-- Strengthen investment after Decision 2
-- Disruption reveal
-- Six-condition result model
-- Portfolio synergies and hard-gate outcomes
-- Local save / resume
-- Optional Supabase event and completed-run capture
+## How to deploy
+1. Upload `index.html`, `app.js`, `styles.css`, `config.js`, `.nojekyll` to the repository root, overwriting the old versions.
+2. Confirm GitHub Pages deploys from `main` / root.
+3. Hard-refresh the page (Ctrl+Shift+R).
+4. Select one option at each of three decisions, strengthen one choice, view the disruption, then resolve to the result.
 
-## Deploy from the GitHub web interface
-1. Create a new repository.
-2. Upload every file in this folder to the repository root.
-3. Open **Settings → Pages**.
-4. Under **Build and deployment**, choose **Deploy from a branch**.
-5. Select `main` and `/ (root)`, then save.
-6. Open the Pages URL after deployment completes.
+## What was fixed
+- End-to-end budget checking so no choice leads to an impossible final decision.
+- Budget changed to Capital **7**, Change **8**, Operations **7**, permitting each two-decision strategy to reach at least one third choice while preserving constraints.
+- Invalid choices are visibly disabled before selection with a reason, rather than appearing to succeed then hitting a dead end.
+- Returning to a previous decision clears incompatible later selections and strengthening.
+- Result review starts a consistent new decision branch rather than mixing old and new choices.
+- Local storage is versioned (`arthur-care-well-v2`) so incompatible old sessions cannot break progression.
+- Event handlers are delegated, eliminating embedded inline action JavaScript.
+- Results narrate Arthur's experience at each step and link to the visioning deck's five design translation categories.
+- Outcome telemetry cannot be duplicated by reopening a completed result.
 
-## Optional Supabase setup
-1. Create or open a Supabase project.
-2. In **SQL Editor**, run `supabase-schema.sql`.
-3. Open **Project Settings / API** and copy the Project URL and publishable/anon key.
-4. Edit `config.js` in GitHub and paste those two public browser values.
-5. Never place a `service_role` key in this repository.
+## What wasn't changed
+- Original nine capability options, their costs/impacts, strengthening and synergy data.
+- Six-dimension outcome model and its qualitative reveal classification.
+- Multi-player mode: not included or required.
 
-The SQL grants browser clients INSERT only. They cannot read, edit, or delete telemetry rows.
+## Persistence and optional telemetry
+`localStorage` records the single-player run on the device. Supabase telemetry is intentionally not loaded by default, so network/CDN failure cannot block the single-player game. To enable telemetry later, restore `<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>` in `index.html` before `config.js`, then fill `config.js` with a public URL and **anon/publishable** key after creating your own secure event/run tables and RLS policies. Never put a service-role key in browser JavaScript. The original ZIP references a `supabase-schema.sql` that was **not supplied**, so no database schema is included in this replacement.
 
-## Logic files
-- `app.js`: game content, scoring, synergies, screens, persistence and telemetry
-- `styles.css`: responsive visual system
-- `config.js`: optional Supabase connection and game version
-- `supabase-schema.sql`: telemetry tables and row-level-security policy
-
-## Next logical build slice
-1. Validate the nine option scores through repeated play.
-2. Add more differentiated disruption reveals based on each exact portfolio.
-3. Add Arthur imagery and transitional scene reveals.
-4. Only after single-player logic is stable, add shared sessions / XPlayer.
-5. end
-6. 
+## Testing
+Run in any static web server or GitHub Pages. Check browser developer console if the page stays blank. `app.js` is syntax-checkable using `node --check app.js`.
