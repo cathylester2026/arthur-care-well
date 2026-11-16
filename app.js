@@ -26,7 +26,13 @@ function option(id){for(const d of GAME.decisions){const x=d.options.find(o=>o.i
 function totals(){const t={capital:0,change:0,operations:0};Object.values(state.choices).forEach(id=>{const c=option(id).cost;t.capital+=c[0];t.change+=c[1];t.operations+=c[2]});return t}
 function scores(){let s=[0,0,0,0,0,0];const vals=Object.values(state.choices);vals.forEach(id=>option(id).impact.forEach((v,i)=>s[i]+=v));if(state.strengthened){option(state.strengthened).boost.forEach((v,i)=>s[i]+=v)}GAME.synergies.forEach(([a,b,i,v])=>{if(vals.includes(a)&&vals.includes(b))s[i]+=v});return s.map(v=>Math.min(3,Math.round(v/Math.max(1,vals.length))))}
 function shell(inner,step=0){return `<div class="shell"><div class="topbar"><div class="brand">Arthur <span>·</span> Care Well</div><div class="version">Single player · ${CFG.gameVersion||'prototype'}</div></div>${step?`<div class="progress">${[1,2,3,4,5].map(x=>`<i class="${x<=step?'on':''}"></i>`).join('')}</div>`:''}${inner}<div class="footerline">A wellness campus is not a collection of services. It is a promise that the experience can reorganize around Arthur.</div></div>`}
-function render(){if(state.screen==='intro')intro();else if(state.screen.startsWith('d'))decision(+state.screen.slice(1));else if(state.screen==='strengthen')strengthen();else if(state.screen==='disruption')disruption();else result()}
+function render(){
+  if(state.screen === 'intro') intro();
+  else if(state.screen === 'strengthen') strengthen();
+  else if(state.screen === 'disruption') disruption();
+  else if(/^d[1-3]$/.test(state.screen)) decision(+state.screen.slice(1));
+  else result();
+}
 function intro(){const has=load()&&Object.keys(state.choices).length;app.innerHTML=shell(`<section class="hero"><div class="eyebrow">One visit · Three decisions · One disruption</div><h1>Care<br>Well.</h1><p>Arthur is coming to a wellness campus for imaging, diagnostics and a planned outpatient procedure. Design how the campus meets Arthur, assembles care and sends Arthur home ready. Then see what holds when the plan changes.</p>${has?`<div class="resume">A saved playthrough is available on this device.</div>`:''}<div class="actions"><button class="primary" onclick="start()">${has?'Continue':'Begin Arthur’s day'}</button>${has?'<button class="secondary" onclick="resetGame()">Start over</button>':''}</div></section>`)}
 function start(){if(!state.startedAt)state.startedAt=new Date().toISOString();state.screen=Object.keys(state.choices).length?`d${Math.min(Object.keys(state.choices).length+1,3)}`:'d1';event('game_started');render()}
 function resources(){const t=totals(),b=GAME.budgets;return `<div class="resourcebar">${[['capital','Capital'],['change','Change'],['operations','Operations']].map(([k,l])=>`<span class="resource ${t[k]>b[k]?'over':''}">${l}: ${t[k]} / ${b[k]}</span>`).join('')}</div>`}
