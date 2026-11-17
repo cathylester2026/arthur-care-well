@@ -196,3 +196,40 @@ button:disabled{cursor:not-allowed;opacity:.56;transform:none}
 .reveal-insight button{border-color:#fff9;color:inherit}
 .reveal-footnote{color:#526a61;font-size:.85rem;margin:12px 0}
 @media(max-width:790px){.reveal-layout{grid-template-columns:1fr}.reveal-scene,.reveal-scene .design-scene.hero{min-height:250px}.reveal-speech{font-size:1rem}.top-controls{gap:6px}.story-return{font-size:.7rem;padding:7px 9px}}
+
+/* v1.2: clear controls, unique investment imagery, visual-first results */
+.reveal-insight .moment-link,.reveal-insight button.moment-link{background:#f6fff9!important;color:#123f34!important;border:2px solid #b4e1c8!important;box-shadow:0 2px 6px #10282033;font-weight:900!important;min-width:180px;opacity:1!important}
+.reveal-insight .moment-link span{color:#215e4b!important;min-width:auto}
+.reveal-insight .moment-link:hover{background:#d6f4e2!important}
+.investment-art img{object-fit:cover!important;object-position:center!important}
+.aha-internal{background:#fff3d9;border-left:6px solid #d78a36;border-radius:14px;padding:16px 19px;margin:15px 0;display:grid;gap:7px}
+.aha-label{font-size:.78rem!important;font-weight:950!important;letter-spacing:.11em;color:#bd6748;text-transform:uppercase}
+.aha-internal strong{font-size:1.14rem;line-height:1.4;color:#183b31}.aha-internal small{color:#536d60;font-size:.85rem}
+.v12-result,.v12-journey{max-width:1160px;margin:auto}
+.v12-strategy-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}
+.strategy-tile{border:2px solid #d4e3d9;border-radius:17px;overflow:hidden;background:#f7faf7;min-width:0}
+.strategy-tile.ready-now{border:3px solid #168c76;box-shadow:0 0 0 3px #d2eee1}
+.strategy-tile .design-scene.card{height:170px;border-radius:0;margin:0}
+.strategy-tile-body{padding:16px}.strategy-tile h3{font-size:1.2rem;margin:7px 0}.strategy-tile p{font-size:.92rem;line-height:1.45;margin:0;color:#3d6256}
+.strategy-phase{color:#246650;font-size:.74rem;font-weight:950;letter-spacing:.08em}
+.v12-aha{border-radius:18px;padding:22px;background:#173e33;color:white;margin:16px 0}
+.v12-aha .aha-label{color:#f7b88e}.v12-aha h3{font-size:1.35rem;color:white;margin:9px 0}.v12-aha p{font-size:1rem;color:#dcece2;margin:0;line-height:1.45}
+.v12-resource-line{border-radius:12px;padding:12px;background:#eaf3ee;font-size:.85rem;color:#285c4c;font-weight:750}
+.journey-minimap{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:17px 0}
+.moment-dot{display:flex;flex-direction:column;align-items:center;gap:5px;border:2px solid #c9dcd1;background:#f2f8f4;color:#244e43;border-radius:12px;padding:10px 3px;min-width:0}
+.moment-dot span{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#d7e6de;font-weight:900}.moment-dot small{font-size:.7rem}
+.moment-dot.active{background:#d3efe3;border-color:#158a72;box-shadow:0 0 0 2px #d3efe3}.moment-dot.fragile:not(.active) span{background:#f8dfad}.moment-dot.hurt:not(.active) span{background:#f1c3b5}
+.v12-journey-hero{display:grid;grid-template-columns:1.1fr 1fr;gap:0;border:1px solid #d1e4d8;border-radius:19px;overflow:hidden;background:#f3f8f5;min-height:315px}
+.v12-journey-image{position:relative;min-height:315px}.v12-journey-image img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.journey-image-label{position:absolute;bottom:14px;left:16px;background:#173e33ee;color:#fff;padding:9px 12px;border-radius:9px;font-size:.72rem;font-weight:900}
+.v12-journey-story{padding:25px;display:flex;flex-direction:column;justify-content:center;gap:10px}.v12-journey-story h3{font-size:1.55rem;margin:0}.v12-journey-story p{margin:0;line-height:1.48}.moment-status{align-self:flex-start;padding:7px 11px;border-radius:40px;font-size:.75rem;font-weight:950;background:#d1ecde;color:#17543c}.moment-status.fragile{background:#fff0bd;color:#765000}.moment-status.hurt{background:#f3d1ca;color:#8a382a}
+.v12-aha.compact{padding:14px;margin:3px 0}.v12-aha.compact strong{display:block;margin-top:5px;font-size:1rem;line-height:1.43}
+.journey-details{font-size:.87rem}.journey-details summary{font-weight:900;cursor:pointer;color:#145a46}
+.v12-brief{border-top:2px solid #c4dace;margin-top:32px;padding-top:18px}.v12-brief h3{font-size:1.4rem}.brief-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.brief-two>div{background:#ecf5ee;padding:14px;border-radius:13px}.brief-two p{font-size:.9rem;line-height:1.5}
+@media(max-width:750px){.v12-strategy-grid{grid-template-columns:1fr}.strategy-tile{display:grid;grid-template-columns:40% 1fr}.strategy-tile .design-scene.card{height:100%;min-height:170px}.strategy-tile-body{padding:12px}.strategy-tile h3{font-size:1.05rem}.strategy-tile p{font-size:.78rem}.v12-journey-hero{grid-template-columns:1fr}.v12-journey-image{min-height:190px;max-height:215px}.v12-journey-story{padding:17px}.v12-journey-story h3{font-size:1.28rem}.journey-minimap{gap:4px}.moment-dot{padding:8px 1px}.moment-dot small{font-size:.57rem}.brief-two{grid-template-columns:1fr}}
+
+/* Ensure the shared .card class never makes decorative image frames 460px tall. */
+.design-scene.card{min-height:0!important;padding:0!important;display:block!important;box-shadow:none!important;flex:0 0 auto}
+.strategy-tile .design-scene.card{height:165px!important;min-height:0!important;width:100%;aspect-ratio:auto}
+.strategy-tile .design-scene.card img{object-fit:cover!important;object-position:center center!important}
+.card .design-scene.card{height:155px!important;min-height:0!important}
+@media(max-width:750px){.strategy-tile .design-scene.card{height:100%!important;min-height:165px!important}}

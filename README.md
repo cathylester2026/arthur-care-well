@@ -1,21 +1,16 @@
-# Arthur · Care Well — Single Player v1.1
+# Arthur · Care Well — Single Player v1.2
 
-Full replacement for repository root (including `assets/`). No build step or external service required.
+## Updates
+- Restored ACHC introduction and Arthur baseline are preserved. New storage key avoids entering old saved games mid-story.
+- Decision → Impact → Arthur Reveal remains mandatory for all three investments.
+- Fixed low-contrast “Learn more” button on reveal screens.
+- Distinct illustrated visual assets for Digital Arrival, Shared Diagnostic Core, and Connected Wellness.
+- Explicit investment opportunity-cost aha, based on the current budget and next decision.
+- Endgame is now two screens: **What your investments created** and **What Arthur experienced**, with five tap-through moments; design implications and capability scores remain expandable at the end.
+- A separate opening-day priority still determines which investment is fully operational first. Future-phase investments retain value; no clinical outcome is determined by score alone.
 
-## What's new
+## Deploy
+Replace repository root contents with this package including assets/. The web page displays care-well-sp-1.2.0. No build required.
 
-- ACHC campus, Arthur, and four-stop baseline remain the required new-journey opening.
-- Visiting the app always displays the story introduction. Use **Enter the Airdrie campus** for a fresh journey or **Resume saved journey** to continue previously saved v1.1 progress.
-- **Meet ACHC & Arthur** in the top bar lets players return to the introduction without erasing their saved work.
-- Every investment has two separate screens: **Impact** (benefit, resources, trade-off, future value) followed by **Arthur’s Reveal** (concrete, positive human-scale benefit, remaining dependency, design insight).
-- Reveals for all nine investments; the major unexpected clinical event still happens later, after opening-day prioritization and registration selection.
-- Existing two-screen Explore Futures / Understand Impact design moments are preserved.
-- New version-specific storage key `arthur-care-well-v11` avoids old sessions skipping the new story. Existing v1.0 state remains untouched but is not migrated.
-
-## Deployment
-
-Copy the ZIP contents directly into the root of the GitHub Pages repository. Commit `index.html`, `app.js`, `styles.css`, `config.js`, `design-moments.js`, `design-ui.js`, `.nojekyll`, and the complete `assets/` folder. Verify the visible version `care-well-sp-1.1.0`.
-
-## Narrative boundary
-
-Arthur and the procedure are fictional. Pre-procedure tests are illustrative scenario requirements rather than clinical rules. Future operating arrangements are proposals for discussion, not approved ACHC specifications.
+## Scope
+Single-player only. Visual and clinical scenarios are illustrative, not approved ACHC requirements.
