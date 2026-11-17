@@ -1,28 +1,25 @@
-# Arthur · Care Well — v0.9: Arthur's Journey Begins
+# Arthur · Care Well — Single Player v1.0.0
 
-Complete, static, single-player GitHub Pages application, built from v0.8 with a new visual baseline before investment decisions.
+## What changed since v0.9
 
-## New opening sequence
+The six optional **Design Moments** are now two compact, focused screens:
 
-1. **Introduce the place.** ACHC as a mixed-service care ecosystem with independent partners. This is a future-state visioning scenario, not a description of an approved building or clinical operating model.
-2. **Meet Arthur.** Fictional 72-year-old patient preparing for a planned outpatient procedure, accompanied by his wife. The game's *assumed* pre-procedure requirements are lab work, imaging and a pre-check consultation; not all outpatient procedures need these tests.
-3. **Walk the baseline.** Four clickable stops: Arrival → Laboratory → Imaging → Pre-check consult. Each has an illustrated setting, a human concern and a coordination question. Clarity, Continuity and Confidence anchor the journey.
-4. **Invest in change.** The original v0.8 decisions, opportunity costs, Decision → Impact → Reveal cadence, opening-day implementation priorities, partner registration, clinical disruption, six design moments and final architectural/operational translation remain intact.
+1. **Explore the Futures:** three image-led alternatives, brief labels, and the central design question.
+2. **Understand the Impact:** one chosen image, what it enables for Arthur, what ACHC must take on, and a single switchable discipline view (Architecture / Functional Planning / Engineering).
 
-After each of the three investments, the game identifies what improves compared with Arthur's initial journey. All legitimate investments retain benefit and future value even where the full operating model is not ready at opening.
+An optional expandable section retains the **Protect at opening** and **Enable as the model evolves** guidance. Persistent bottom navigation provides Return to Arthur / Continue and Compare Futures / Return to Arthur. No new required rounds, budgets, decision cards, or scoring rules have been introduced.
 
-## Install
+## Installation
 
-Upload **all files** from this ZIP to the root of your GitHub Pages repository (preserve the `assets/` folder). Commit and hard-refresh. The displayed version should be `care-well-sp-0.9.0`. v0.9 has its own local saved-game key and will not load in-progress v0.8 games.
+Unzip the contents into the root of the existing GitHub Pages repository, replacing prior copies of `index.html`, `styles.css`, `app.js`, `design-ui.js`, `design-moments.js`, `config.js`, and `README.md`; keep the entire `assets` directory. Commit and refresh the published site, using a hard refresh if the browser has cached v0.9 assets.
 
-## Test journey
+No build system, backend, or additional services required. Asset names and page URLs remain relative for project GitHub Pages hosting.
 
-Campus introduction → Meet Arthur → Baseline stops 1–4 → Decision 1 → Impact 1 → Decision 2 → Impact 2 → Decision 3 → Impact 3 → Opening priority + registration → Clinical disruption → Operational pressure → Design & Operations lens → Commitment → Results.
+## Testing scope
 
-Also test reopening all six design moments, switching architectural/planning/engineering tabs, backtracking investments, varying registration models, and refreshing a partially completed session.
+- JavaScript syntax checks: app.js and design-ui.js passed.
+- Chromium browser UI: all six Design Moments tested at 1365×900 and 390×844. Tested option selection, Explore → Impact, each of the three discipline tabs, Impact → Explore, opening-day disclosure and modal close. No JavaScript page errors were observed in these tests.
+- These tests ran in a browser with the application source injected because direct navigation to local files was blocked by the environment. Packaged image assets are present and were validated as files; this is **not** a confirmed visual test of GitHub Pages deployment.
+- The existing v0.9 single-player game logic and source data are otherwise unchanged; this pass did not repeat the full portfolio regression sweep.
 
-## Assumptions and limits
-
-- Arthur, his wife, clinical scenario, and interactions are fictional. Do not read the baseline as documented current ACHC failures or as a clinical care protocol.
-- The architectural imagery and six-futures alternatives are conceptual visioning provocations, not approved ACHC designs.
-- Resource costs are illustrative gameplay constraints, not budget estimates, engineering specifications or clinical safety scores.
+All Design Moment text and images are illustrative discussion material, not approved ACHC architectural drawings, clinical operating policies or engineering requirements.

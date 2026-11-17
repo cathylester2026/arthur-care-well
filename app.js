@@ -384,6 +384,8 @@ app.addEventListener('click',e=>{
     case 'close-moment':{const dlg=document.getElementById('moment-dialog');if(dlg){if(typeof dlg.close==='function'&&dlg.open)dlg.close();else dlg.removeAttribute('open');}break;}
     case 'moment-choice':momentView.choice=Math.max(0,Math.min(2,Number(btn.dataset.index)||0));renderMomentDialog();break;
     case 'moment-tab':momentView.tab=['arch','plan','eng'].includes(btn.dataset.tab)?btn.dataset.tab:'arch';renderMomentDialog();break;
+    case 'moment-next':momentView.step='impact';momentView.tab='arch';renderMomentDialog();break;
+    case 'moment-back':momentView.step='explore';renderMomentDialog();break;
     case 'choose':choose(btn.dataset.decision,btn.dataset.option);break;
     case 'continue-impact':continueImpact(Number(btn.dataset.step));break;
     case 'back':back(Number(btn.dataset.step));break;

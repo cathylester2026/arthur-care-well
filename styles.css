@@ -105,3 +105,73 @@ button:disabled{cursor:not-allowed;opacity:.56;transform:none}
 .baseline-stage{display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:stretch}.baseline-scene{position:relative;min-height:320px;border-radius:18px;overflow:hidden;background:#e2ebe8}.baseline-scene img{display:block;width:100%;height:100%;min-height:320px;object-fit:cover}.baseline-scene-label{position:absolute;left:14px;bottom:14px;background:#163d35eb;color:white;padding:10px 14px;border-radius:10px;font-size:.8rem;font-weight:900;letter-spacing:.05em}.baseline-text{padding:27px 24px;border-radius:18px;background:#f5f8f4;border:1px solid #dce8df;display:flex;flex-direction:column;justify-content:center}.baseline-kicker{color:#357f6a;font-size:.73rem;font-weight:900;letter-spacing:.08em}.baseline-text h3{font-size:1.55rem;line-height:1.25;margin:10px 0}.baseline-text blockquote{font-size:1.1rem;line-height:1.5;font-style:italic;border-left:3px solid #e19c54;margin:12px 0;padding-left:15px;color:#555}.baseline-dependency{border-top:1px solid #ccddd2;margin-top:7px;padding-top:13px}.baseline-dependency p{margin:5px 0 0;line-height:1.5}.baseline-values{display:flex;gap:10px;flex-wrap:wrap;margin:17px 0}.baseline-values span{border:1px solid #caddce;border-radius:20px;padding:7px 11px;font-weight:750;font-size:.84rem;color:#245b4f}
 .intro-v9 .opening-visual{margin:15px 0;max-width:770px}.intro-v9 .opening-visual .design-scene.hero{height:225px}.intro-v9 .lede{font-size:1.07rem}
 @media(max-width:760px){.arthur-layout,.baseline-stage{grid-template-columns:1fr}.journey-track{grid-template-columns:repeat(2,minmax(0,1fr))}.baseline-scene,.baseline-scene img{min-height:220px;max-height:290px}.baseline-text{padding:18px}.baseline-text h3{font-size:1.3rem}.story-image .design-scene.hero{height:225px}}
+
+/* v1.0: two-screen, viewport-contained Design Moments */
+.moment-dialog:has(.moment-two-screen){width:min(1080px,calc(100vw - 28px));height:min(790px,calc(100dvh - 28px));max-height:calc(100dvh - 28px);overflow:hidden}
+.moment-two-screen{box-sizing:border-box;display:flex;flex-direction:column;height:100%;max-height:none;overflow:hidden;padding:clamp(14px,2vw,25px)}
+.moment-two-screen .moment-topline{flex:none}
+.moment-step-track{display:flex;gap:8px;flex:none;margin:10px 0 0;font-size:.76rem;font-weight:800;color:#6c8277}
+.moment-step-track span{flex:1;text-align:center;padding:9px 6px;background:#eef3ee;border-radius:9px}
+.moment-step-track .current{background:#17483c;color:white}
+.moment-step-track .done{background:#d8eee1;color:#1b6c50}
+.moment-screen-content{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px 3px 10px}
+.moment-view-title h2{font-size:clamp(1.7rem,3vw,2.7rem);margin:6px 0 3px}
+.moment-view-title p{font-size:1rem;color:#53695e;margin:0 0 12px}
+.moment-explore-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.moment-explore-grid .moment-option{padding:9px;gap:4px;min-height:0}
+.moment-explore-grid .moment-option .design-scene{height:clamp(135px,24vh,235px);margin:0 0 7px;width:100%}
+.moment-explore-grid .moment-option strong{font-size:1.07rem;line-height:1.25}
+.moment-explore-grid .moment-option small{font-size:.88rem;line-height:1.35}
+.moment-selection{margin-top:auto;color:#226e59;font-weight:800;font-size:.74rem!important;padding-top:7px}
+.moment-explore-question{margin:13px 0 0;background:#eaf3ee;border-radius:12px;padding:12px 16px}
+.moment-explore-question>span{font-size:.71rem;color:#34725f;font-weight:900;letter-spacing:.08em}
+.moment-explore-question p{margin:4px 0 0;font-size:.94rem}
+.moment-screen-footer{display:flex;align-items:center;gap:12px;justify-content:space-between;flex:none;padding:13px 0 0;border-top:1px solid #d9e7db;background:#fffdf7}
+.moment-screen-footer button{margin:0;white-space:normal}
+.moment-footer-hint{flex:1;text-align:center;font-size:.78rem;color:#5c7466}
+.moment-impact-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:3px 0 9px}
+.moment-impact-title h2{font-size:clamp(1.5rem,2.6vw,2.25rem);margin:3px 0 0}
+.moment-future-pill{background:#e0eee7;border-radius:999px;color:#22634e;font-size:.75rem;font-weight:900;padding:9px 12px;white-space:nowrap}
+.moment-impact-image{position:relative}
+.moment-impact-image .design-scene.hero{height:clamp(145px,23vh,215px);aspect-ratio:auto}
+.moment-image-note{position:absolute;right:8px;bottom:8px;background:#122e26cf;color:white;padding:5px 8px;border-radius:6px;font-size:.67rem}
+.moment-gain-trade{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:11px 0}
+.moment-gain-trade>div{padding:12px 14px;border-radius:12px;background:#e6f3e9}
+.moment-gain-trade>div+div{background:#f6e8df}
+.moment-mini-label{font-weight:850;font-size:.82rem;color:#235c43}
+.moment-gain-trade>div+div .moment-mini-label{color:#7d4a30}
+.moment-gain-trade p{font-size:.91rem;line-height:1.38;margin:5px 0 0}
+.moment-design-header{display:flex;align-items:baseline;justify-content:space-between;gap:9px}
+.moment-design-header h3{font-size:1.15rem;margin:1px 0 4px}
+.moment-design-header span{font-size:.77rem;color:#637d6b}
+.moment-compact-design .moment-tabs{margin:4px 0 7px;padding:4px}
+.moment-compact-design .moment-tabs button{padding:9px 6px}
+.moment-one-discipline{padding:12px 15px;gap:10px}
+.moment-one-discipline .moment-discipline-symbol{font-size:1.55rem;min-width:30px}
+.moment-one-discipline p{margin:0;font-size:.91rem;line-height:1.4}
+.moment-extra{margin:10px 0 0;font-size:.85rem}
+.moment-extra summary{cursor:pointer;color:#205743;font-weight:800;padding:6px}
+.moment-extra .moment-phasing{margin:6px 0}
+.moment-extra .moment-phasing>div{padding:10px}
+.moment-extra .moment-phasing p{font-size:.83rem}
+@media(max-width:700px){
+ .moment-dialog:has(.moment-two-screen){width:calc(100vw - 12px);height:calc(100dvh - 12px);max-height:calc(100dvh - 12px)}
+ .moment-two-screen{padding:12px}
+ .moment-step-track{font-size:.67rem}
+ .moment-explore-grid{grid-template-columns:1fr;gap:8px}
+ .moment-explore-grid .moment-option{display:grid;grid-template-columns:94px 1fr;grid-template-rows:auto auto auto;min-height:0;gap:0 10px;padding:7px}
+ .moment-explore-grid .moment-option .design-scene{grid-row:span 3;height:98px;margin:0}
+ .moment-explore-grid .moment-option strong{font-size:.92rem}
+ .moment-explore-grid .moment-option small{font-size:.78rem}
+ .moment-selection{padding:0;font-size:.7rem!important}
+ .moment-explore-question{padding:9px}
+ .moment-gain-trade{grid-template-columns:1fr;gap:7px}
+ .moment-gain-trade>div{padding:9px}
+ .moment-screen-footer{gap:6px;padding-top:9px}
+ .moment-screen-footer button{font-size:.77rem;padding:9px 10px}
+ .moment-footer-hint{display:none}
+ .moment-impact-image .design-scene.hero{height:175px}
+ .moment-image-note{font-size:.56rem}
+ .moment-design-header span{display:none}
+ .moment-compact-design .moment-tabs button{font-size:.78rem;min-width:0}
+}
