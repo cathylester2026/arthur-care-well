@@ -1,18 +1,18 @@
-# Arthur · Care Well — v0.4 (single-player)
+# Arthur · Care Well — v0.5 single-player
 
-## Install
-Replace the root `index.html`, `app.js`, `styles.css`, `config.js`, and `.nojekyll` in your GitHub Pages repository with the included files. No bundler, database, or credentials are needed. Hard-refresh after deployment.
+Deploy all six files in the root of the GitHub Pages repository. No build tools needed. Verify the banner shows `care-well-sp-0.5.0`. Reload without browser cache if necessary.
 
-## Journey
-Arrival → Care model → Strengthen → Departure → Clinical disruption → Operational pressure → Operations/Design lens → One ACHC commitment → Final reveal.
+## Changes
+- Existing nine design options and Capital/Change/Operations limits retained.
+- Trade-off is shown before every design selection.
+- The original strengthening screen has been replaced by an **opening-day readiness** decision after all three design choices. Only one investment is operational on opening day; the other two represent intended future design directions, not guaranteed live workflows. This is a deliberate simplification of phasing, not a prediction of clinical readiness.
+- Registration choice: **centralized**, **department/setting**, or **federated**; all have real benefits and costs. None assumes an independent provider is owned by Covenant Health.
+- Disruption includes a specialist run by an independent organization. The new partner moment tests confirmation of referral acceptance and the limitations of shared registration.
+- Five consequence moments: arrival, clinical, operations, independent partner, transition. The Design & Operations Lens includes opening-day readiness and cross-organization obligations.
+- Saved-state key is v5; earlier saves are intentionally not imported. Invalid over-budget restored portfolios are rejected.
 
-## New in v0.4
-- Distinct Operations and Design tabs, each generated from the actual arrival, care, and departure portfolio.
-- One final unscored commitment selected from three portfolio-specific implications.
-- Classify the commitment as **Enable now**, **Coordinate across services**, or **Preserve for the future**.
-- Selected commitment and both operational/physical implications included in the final screen and copied brief.
-- Completion occurs after commitment rather than when the disruption ends.
-- Versioned local storage (`arthur-care-well-v4`) avoids loading incompatible prior state. Existing v0.3 sessions start fresh.
+## Intended discussion
+This simulation illustrates operating-model trade-offs and future design implications. It is not an approved clinical pathway, formal budget, legal analysis, digital architecture, or staffing plan. Specific partner privacy, consent, registration, clinical and contractual agreements must be assessed by the responsible organizations.
 
-## Limitations
-This is a stakeholder visioning simulation, not an approved operating model or architectural design specification. Consequence wording and commitment options are scenario design assumptions requiring workshop validation. Browser/device visual testing is recommended before facilitated use.
+## Testing
+Run `node --check app.js`. The provided game is fully local and may be served by a basic static HTTP server or GitHub Pages.

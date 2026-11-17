@@ -18,39 +18,37 @@ const GAME={
  {id:'wellness',letter:'C',name:'Connected Wellness',tag:'Use the procedure as the beginning of Arthur’s next care plan.',creates:['Confirmed follow-up','Connected medication and recovery','Continued support'],requires:['Wellness navigation','Virtual care','Named follow-up ownership'],risk:'A referral is not continuity unless capacity and ownership exist.',cost:[2,3,3],impact:[3,3,2,2,2,3],strength:'Closed-Loop Wellness',boost:[0,0,0,1,1,0]}]}],
  synergies:[['digital','network',1,1],['digital','core',0,1],['legible','core',2,1],['human','network',3,1],['human','comes',0,1],['core','adaptive',4,1],['comes','adaptive',2,1],['network','wellness',5,1],['core','wellness',1,1],['human','wellness',5,1]]
 };
-const STORAGE_KEY = 'arthur-care-well-v4';
+const STORAGE_KEY = 'arthur-care-well-v5';
 const OLD_KEY = 'arthur-care-well';
-const SCREEN_ORDER = ['intro','d1','d2','strengthen','d3','disruption','pressure','lens','commit','result'];
+const SCREEN_ORDER = ['intro','d1','d2','d3','readiness','disruption','pressure','lens','commit','result'];
 const app = document.getElementById('app');
 const newId = () => (window.crypto && typeof crypto.randomUUID==='function') ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const fresh = () => ({screen:'intro', choices:{}, strengthened:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null});
+const fresh = () => ({screen:'intro', choices:{}, strengthened:null, readiness:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null});
 function load() {
-  try {
-    const raw=localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null; // Prior-version decisions are not imported into changed budgets / logic.
-    const s=JSON.parse(raw);
-    if (!s || typeof s!=='object' || !s.choices || typeof s.choices!=='object') return null;
-    const safe=fresh();
-    for (const d of GAME.decisions) {
-      if (d.options.some(o=>o.id===s.choices[d.id])) safe.choices[d.id]=s.choices[d.id];
-    }
-    if (SCREEN_ORDER.includes(s.screen)) safe.screen=s.screen;
-    if (typeof s.strengthened==='string' && Object.values(safe.choices).includes(s.strengthened)) safe.strengthened=s.strengthened;
-    if (typeof s.startedAt==='string') safe.startedAt=s.startedAt;
-    if (typeof s.sessionId==='string') safe.sessionId=s.sessionId;
-    if (Array.isArray(s.events)) safe.events=s.events.slice(-100);
-    safe.completed=!!s.completed;
-    if (['operations','design'].includes(s.lensTab)) safe.lensTab=s.lensTab;
-    if (s.commitment && typeof s.commitment==='object' && typeof s.commitment.id==='string' && ['enable','coordinate','preserve'].includes(s.commitment.category)) safe.commitment={id:s.commitment.id,category:s.commitment.category};
-    // Never resume a screen without its prerequisites.
-    if (['d2','strengthen','d3','disruption','pressure','lens','commit','result'].includes(safe.screen) && !safe.choices.arrival) safe.screen='d1';
-    if (['strengthen','d3','disruption','pressure','lens','commit','result'].includes(safe.screen) && !safe.choices.care) safe.screen='d2';
-    if (['d3','disruption','pressure','lens','commit','result'].includes(safe.screen) && !safe.strengthened) safe.screen='strengthen';
-    if (['disruption','pressure','lens','commit','result'].includes(safe.screen) && !safe.choices.leave) safe.screen='d3';
-    if (['commit','result'].includes(safe.screen) && !safe.choices.leave) safe.screen='d3';
-    if (safe.screen==='result' && (!safe.commitment || !['arrival','care','leave'].includes(safe.commitment.id))) safe.screen='commit';
-    return safe;
-  } catch (err) { console.warn('Could not restore game:',err); return null; }
+ try {
+  const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return null;
+  const saved=JSON.parse(raw);if(!saved||typeof saved!=='object'||!saved.choices)return null;
+  const next=fresh();
+  for(const d of GAME.decisions){if(d.options.some(o=>o.id===saved.choices[d.id]))next.choices[d.id]=saved.choices[d.id];}
+  // Reject invalid and over-budget portfolios, including edited localStorage.
+  if(!withinBudget(next.choices))return null;
+  if(['central','department','federated'].includes(saved.readiness?.registration) &&
+     ['arrival','care','leave'].includes(saved.readiness?.priority))next.readiness={registration:saved.readiness.registration,priority:saved.readiness.priority};
+  if(next.readiness)next.strengthened=next.choices[next.readiness.priority]||null;
+  if(SCREEN_ORDER.includes(saved.screen))next.screen=saved.screen;
+  if(typeof saved.startedAt==='string')next.startedAt=saved.startedAt;
+  if(typeof saved.sessionId==='string')next.sessionId=saved.sessionId;
+  if(Array.isArray(saved.events))next.events=saved.events.slice(-100);
+  if(['operations','design'].includes(saved.lensTab))next.lensTab=saved.lensTab;
+  if(saved.commitment && ['arrival','care','leave'].includes(saved.commitment.id) && ['enable','coordinate','preserve'].includes(saved.commitment.category))next.commitment={id:saved.commitment.id,category:saved.commitment.category};
+  const progress=ids(next.choices).length;
+  if(progress===0 && next.screen!=='intro')next.screen='d1';
+  else if(progress===1 && !['intro','d1','d2'].includes(next.screen))next.screen='d2';
+  else if(progress===2 && !['intro','d1','d2','d3'].includes(next.screen))next.screen='d3';
+  else if(progress===3 && ['disruption','pressure','lens','commit','result'].includes(next.screen) && !next.readiness)next.screen='readiness';
+  if(next.screen==='result'&&!next.commitment)next.screen='commit';
+  next.completed=next.screen==='result';return next;
+ } catch(err){console.warn('Saved game could not be restored',err);return null;}
 }
 let state=load() || fresh();
 let db=null;
@@ -91,14 +89,14 @@ function scores(){
   chosen.forEach(id=>option(id).impact.forEach((v,i)=>raw[i]+=v));
   GAME.synergies.forEach(([a,b,i,v])=>{if(chosen.includes(a)&&chosen.includes(b))raw[i]+=v;});
   const norm=raw.map(v=>Math.min(3,Math.max(0,Math.round(v/Math.max(1,chosen.length)))));
-  if(state.strengthened&&chosen.includes(state.strengthened)) option(state.strengthened).boost.forEach((v,i)=>norm[i]=Math.min(3,norm[i]+v));
+  // Capability scores show the portfolio; operational readiness affects observed consequences, not free numeric boosts.
   return norm;
 }
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function shell(inner,step=0){return `<div class="shell"><div class="topbar"><div class="brand">Arthur <span>·</span> Care Well</div><div class="version">Single player · ${escapeHTML(CFG.gameVersion||'prototype')}</div></div>${step?`<div class="progress" aria-label="Game progress, step ${step} of 5">${[1,2,3,4,5].map(x=>`<i class="${x<=step?'on':''}"></i>`).join('')}</div>`:''}${inner}<div class="footerline">A wellness campus is not a collection of services. It is a promise that the experience can reorganize around Arthur.</div></div>`;}
 function render(){
   if(state.screen==='intro')return intro();
-  if(state.screen==='strengthen')return strengthen();
+  if(state.screen==='readiness')return readinessScreen();
   if(state.screen==='disruption')return disruption();
   if(state.screen==='pressure')return pressure();
   if(/^d[1-3]$/.test(state.screen))return decision(Number(state.screen.slice(1)));
@@ -109,7 +107,7 @@ function render(){
 }
 function intro(){
   
-  app.innerHTML=shell(`<section class="hero"><div class="eyebrow">One visit · Three decisions · One disruption</div><h1>Care<br>Well.</h1><p>Arthur is coming to a wellness campus for imaging, diagnostics and a planned outpatient procedure. Design how the campus meets Arthur, assembles care and sends Arthur home ready. Then see what holds when the plan changes.</p><p class="intro-note">You will make three design decisions with limited Capital, Change and Operations resources, strengthen one choice, and then face an unexpected change.</p><div class="actions"><button class="primary" data-action="begin">Begin Arthur’s day</button></div></section>`);
+  app.innerHTML=shell(`<section class="hero"><div class="eyebrow">One visit · Three decisions · One opening-day priority</div><h1>Care<br>Well.</h1><p>Arthur is coming to a wellness campus for imaging, diagnostics and a planned outpatient procedure. Design how the campus meets Arthur, assembles care and sends Arthur home ready. Then see what holds when the plan changes.</p><p class="intro-note">You will make three design decisions with limited Capital, Change and Operations resources, choose what can be operational at opening and how independent partners register, then face an unexpected change.</p><div class="actions"><button class="primary" data-action="begin">Begin Arthur’s day</button></div></section>`);
 }
 function begin(){state=fresh();state.startedAt=new Date().toISOString();state.screen='d1';event('game_started');render();}
 function resources(){const t=totals(),b=GAME.budgets;return `<div class="resourcebar" aria-label="Resource use">${[['capital','Capital'],['change','Change'],['operations','Operations']].map(([k,l])=>`<span class="resource ${t[k]>b[k]?'over':''}">${l}: ${t[k]} / ${b[k]}</span>`).join('')}</div>`;}
@@ -118,33 +116,42 @@ function decision(n){
   const previous=n>1?`<button class="secondary" data-action="back" data-step="${n-1}">Back to decision ${n-1}</button>`:'';
   app.innerHTML=shell(`<section class="panel"><div class="stage">Decision ${n} of 3</div><h2>${escapeHTML(d.title)}</h2><p class="lede">${escapeHTML(d.prompt)}</p>${resources()}<div class="cards">${d.options.map(o=>{
     const available=optionAvailable(d.id,o.id);
-    return `<article class="card ${!available?'unavailable':''}"><div class="letter">${escapeHTML(o.letter)}</div><h3>${escapeHTML(o.name)}</h3><div class="tagline">${escapeHTML(o.tag)}</div><strong>Creates</strong><ul>${o.creates.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul><strong>Requires</strong><ul>${o.requires.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul><div class="risk"><strong>Risk:</strong> ${escapeHTML(o.risk)}</div><div class="costs"><span class="cost">Capital ${o.cost[0]}</span><span class="cost">Change ${o.cost[1]}</span><span class="cost">Operations ${o.cost[2]}</span></div>${available?'':`<p class="limit-note">Unavailable with this resource plan. Go back to revise an earlier decision.</p>`}<button class="${available?'primary':'secondary'}" data-action="choose" data-decision="${d.id}" data-option="${o.id}" ${available?'':'disabled'}>${available?'Choose this direction':'Budget limit'}</button></article>`;
+    return `<article class="card ${!available?'unavailable':''}"><div class="letter">${escapeHTML(o.letter)}</div><h3>${escapeHTML(o.name)}</h3><div class="tagline">${escapeHTML(o.tag)}</div><strong>Creates</strong><ul>${o.creates.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul><strong>Requires</strong><ul>${o.requires.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul><div class="risk"><strong>Trade-off / what becomes harder:</strong> ${escapeHTML(o.risk)}</div><div class="costs"><span class="cost">Capital ${o.cost[0]}</span><span class="cost">Change ${o.cost[1]}</span><span class="cost">Operations ${o.cost[2]}</span></div>${available?'':`<p class="limit-note">Unavailable with this resource plan. Go back to revise an earlier decision.</p>`}<button class="${available?'primary':'secondary'}" data-action="choose" data-decision="${d.id}" data-option="${o.id}" ${available?'':'disabled'}>${available?'Choose this direction':'Budget limit'}</button></article>`;
   }).join('')}</div><div id="msg" class="error" role="status" aria-live="polite"></div><div class="actions">${previous}</div></section>`,n);
 }
 function choose(did,oid){
   if(!optionAvailable(did,oid)){const msg=document.getElementById('msg');if(msg)msg.textContent='This choice would prevent a complete visit within the resource budget. Revise your earlier choices.';return;}
   const n=GAME.decisions.findIndex(d=>d.id===did)+1;
   for(let i=n;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
-  if(n<=2)state.strengthened=null;
+  state.readiness=null;state.strengthened=null;
   state.choices[did]=oid;
   state.completed=false;state.commitment=null;
-  state.screen=n===1?'d2':n===2?'strengthen':'disruption';
+  state.screen=n===1?'d2':n===2?'d3':'readiness';
   event('decision_selected',{decision:did,option:oid});render();
 }
 function back(n){
-  if(n<1||n>3)return;
-  // Preserve previous choices only up to the preceding step, then allow a clean re-selection.
-  for(let i=n-1;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
-  // Revisiting departure must not erase an earlier strengthening decision.
-  if(n<=2)state.strengthened=null;
-  state.completed=false;state.commitment=null;state.screen=`d${n}`;save();render();
+ if(n<1||n>3)return;
+ for(let i=n-1;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
+ state.readiness=null;state.strengthened=null;state.completed=false;state.commitment=null;
+ state.screen=`d${n}`;save();render();
 }
-function strengthen(){
-  if(!state.choices.arrival||!state.choices.care){state.screen='d2';save();return render();}
-  const chosen=ids();
-  app.innerHTML=shell(`<section class="panel"><div class="stage">Strengthen the design</div><h2>Strengthen one decision</h2><p class="lede">Make one focused resilience improvement to a choice already made. Strengthening does not consume additional resources in this prototype.</p>${resources()}<div class="cards">${chosen.map(id=>{const o=option(id);return `<article class="card strength-card"><div class="letter">+</div><h3>${escapeHTML(o.strength)}</h3><div class="tagline">Strengthen ${escapeHTML(o.name)}</div><p>${escapeHTML(o.risk)}</p><p><strong>Support the journey when Arthur’s plan changes.</strong></p><button class="primary" data-action="strengthen" data-option="${id}">Strengthen this</button></article>`;}).join('')}</div><div class="actions"><button class="secondary" data-action="back" data-step="2">Back to care decision</button></div></section>`,3);
+const REGISTRATION={
+ central:{name:'Centralized registration',gain:'One common Covenant-operated intake and welcome process.',cost:'Independent providers may still require their own registration, consent and billing steps.',ops:'Define registration boundaries, identity exceptions and which partner processes cannot be completed centrally.',place:'Provide one prominent welcome with private exceptions and clear partner-service routing.'},
+ department:{name:'Department / setting registration',gain:'Each service retains control of its own eligibility, privacy and intake workflow.',cost:'Arthur can be asked to repeat details and navigate several desks.',ops:'Create consistent referral instructions and named handoff owners across organizations.',place:'Allow local registration points, visible service entries and accessible circulation between them.'},
+ federated:{name:'Federated welcome',gain:'One campus welcome and identity guidance with service-specific registration where required.',cost:'Shared status, consent and partner agreements must be negotiated and maintained.',ops:'Agree who shares what information, reconciles identity, manages exceptions and accepts referrals.',place:'Combine common welcome infrastructure with flexible private intake capacity for providers.'}
+};
+function readinessScreen(){
+ if(ids().length!==3){state.screen='d3';save();return render();}
+ const ready=state.readiness||{};
+ app.innerHTML=shell(`<section class="panel"><div class="stage">Opening day · A real trade-off</div><h2>You cannot launch everything at once.</h2><p class="lede">Your three directions shape the future campus. But only one can be fully operational on opening day; the other two will be physically enabled or deferred until people, governance and systems are ready. Choose where to concentrate scarce change capacity.</p><div class="choice-summary">${summary()}</div><h3 class="lens-heading">What must be operational at opening?</h3><div class="commit-options" role="radiogroup" aria-label="Opening day priority">${GAME.decisions.map(d=>{const o=option(state.choices[d.id]);return `<label class="commit-option"><input type="radio" name="priority" value="${d.id}" ${ready.priority===d.id?'checked':''}><span><small>${d.title}</small><strong>${escapeHTML(o.name)}</strong><span>Ready with workflows, owners and supporting services. Other choices remain planned, not fully live.</span></span></label>`}).join('')}</div><h3 class="lens-heading">Who registers Arthur across organizational boundaries?</h3><p class="lede">The campus includes independently operated services that may not share Covenant Health's registration system or policies. Choose a model, including its burden.</p><div class="commit-options" role="radiogroup" aria-label="Registration model">${Object.entries(REGISTRATION).map(([id,r])=>`<label class="commit-option"><input type="radio" name="registration" value="${id}" ${ready.registration===id?'checked':''}><span><strong>${escapeHTML(r.name)}</strong><span><b>Enables:</b> ${escapeHTML(r.gain)}</span><span><b>Costs / risks:</b> ${escapeHTML(r.cost)}</span></span></label>`).join('')}</div><div id="msg" class="error" role="status" aria-live="polite"></div><div class="actions"><button class="primary" data-action="set-readiness">Open the campus: test your choices</button><button class="secondary" data-action="back" data-step="3">Change departure design</button></div></section>`,4);
 }
-function applyStrength(id){if(!ids().includes(id))return;state.strengthened=id;state.screen='d3';event('option_strengthened',{option:id});render();}
+function setReadiness(){
+ const p=document.querySelector('input[name="priority"]:checked')?.value;
+ const r=document.querySelector('input[name="registration"]:checked')?.value;
+ if(!['arrival','care','leave'].includes(p)||!REGISTRATION[r]){document.getElementById('msg').textContent='Choose both an opening-day priority and a registration approach.';return;}
+ state.readiness={priority:p,registration:r};state.strengthened=state.choices[p];
+ state.completed=false;state.commitment=null;state.screen='disruption';event('opening_day_decided',{priority:p,registration:r});render();
+}
 function summary(){return GAME.decisions.map(d=>{const o=option(state.choices[d.id]);return `<div><small>${escapeHTML(d.title)}</small><strong>${o?escapeHTML(o.name):'—'}</strong></div>`;}).join('');}
 // v0.3 story engine: discrete moments, never a single threshold hiding other effects.
 const SEVERITY={helped:2,fragile:1,hurt:0};
@@ -184,7 +191,21 @@ function playState(){
   else if(a==='legible')access=verdict('helped','A building Arthur can read','Visible routes and landmarks let Arthur navigate without depending on his phone.','Staff and signs must still address changed clinical destinations.');
   else access=verdict('helped','A human helps Arthur reorient','The welcome guide identifies the changed needs and helps coordinate the next destination.','The guide requires access to current status and someone empowered to act.');
   if(a==='human'&&strong==='human'&&ops.status==='hurt')ops=verdict('fragile','The navigator escalates the conflict','Arthur’s guide can identify a decision maker and help protect the next step, but the capacity constraint remains.','Human authority can resolve an escalation, not manufacture a free diagnostic room.');
-  const moments=[{key:'arrival',...access},{key:'clinical',...clinical},{key:'ops',...ops},{key:'home',...home}];
+  // Distinguish designed future capability from capability operational on opening day.
+  const priority=state.readiness?.priority,registration=state.readiness?.registration;
+  if(priority!=='arrival'&&access.status==='helped')access=verdict('fragile','Arrival design is not fully operational yet',access.detail+' Opening-day teams still bridge gaps manually.','Enabling the building does not make the arrival model operational.');
+  if(priority!=='care'&&clinical.status==='helped')clinical=verdict('fragile','Care design awaits operational readiness',clinical.detail+' The joint service rules are not fully live yet.','Co-location or interoperability is not equivalent to operational coordination.');
+  if(priority!=='care'&&ops.status==='helped')ops=verdict('fragile','Capacity coordination is not fully live',ops.detail+' Staff still negotiate exceptions manually.','Unfunded operational authority cannot be assumed.');
+  if(priority!=='leave'&&home.status==='helped')home=verdict('fragile','Departure capability remains a future commitment',home.detail+' The complete follow-through workflow is not yet operational.','A future capability does not automatically deliver day-one value.');
+  // An independent specialist must accept a new referral. Sharing a campus is not shared governance.
+  let partner;
+  if(registration==='central')partner=verdict('hurt','One welcome, a second organization','The common desk has prepared Arthur, but the independent specialist still needs separate registration and has not accepted the urgent referral.','Central registration cannot promise an independent provider’s capacity or consent process.');
+  else if(registration==='department')partner=verdict('fragile','Separate desks, separate systems','The partner can manage its own intake, but Arthur repeats details and needs a tracked cross-organization handoff.','Local autonomy preserves service control at the expense of journey continuity.');
+  else partner=verdict('fragile','Shared welcome, negotiated boundaries','The federated welcome shares routing and permitted status information, but the specialist must still confirm acceptance under a partner agreement.','A federated model needs ongoing governance and clear exceptions; it is not automatically seamless.');
+  if(registration==='federated'&&priority==='care')partner=verdict('helped','The independent partner accepts the handoff','A prepared cross-provider workflow confirms the specialist’s acceptance while the partner retains its own intake and governance.','A shared welcome succeeds only when cross-organization acceptance and escalation are operational.');
+  if(registration==='department'&&priority==='care')partner=verdict('helped','A manual but owned partner handoff','The specialist completes local intake, while an accountable coordinator verifies acceptance and updates Arthur’s pathway.','Coordinated handoffs can work without one registration system, but require staff time.');
+  if(registration==='central'&&priority==='care')partner=verdict('fragile','The second registration is actively managed','The independent provider retains separate requirements, but a named coordinator confirms intake and appointment acceptance.','A centralized welcome can be effective without pretending to control partner systems.');
+  const moments=[{key:'arrival',...access},{key:'clinical',...clinical},{key:'ops',...ops},{key:'partner',...partner},{key:'home',...home}];
   const counts={helped:0,fragile:0,hurt:0};moments.forEach(m=>counts[m.status]++);
   const headline=counts.hurt>=2?'Several connections fail under pressure':counts.hurt===1?'One critical connection breaks':counts.fragile>=3?'The journey works, but depends on extra effort':'A connected journey with visible dependencies';
   return {moments,counts,headline,sc};
@@ -192,12 +213,12 @@ function playState(){
 function stamp(m){return `<span class="status status-${m.status}">${m.status==='helped'?'Helped':m.status==='fragile'?'Helped, but fragile':'Hurt'}</span>`;}
 function momentCard(m){return `<article class="moment-card"><div class="moment-top">${stamp(m)}</div><h3>${escapeHTML(m.title)}</h3><p>${escapeHTML(m.detail)}</p><p class="why"><strong>Design insight:</strong> ${escapeHTML(m.why)}</p></article>`;}
 function disruption(){
-  if(ids().length!==3||!state.strengthened){state.screen=!state.strengthened?'strengthen':'d3';save();return render();}
+  if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
   const p=playState();
-  app.innerHTML=shell(`<section class="disruption"><div class="stage">Disruption · Part 1 of 2</div><h2>Arthur’s plan changes.</h2><p>Imaging identifies an unexpected finding. Arthur needs a specialist review and one more diagnostic step before his planned outpatient procedure can safely proceed.</p><div class="choice-summary">${summary()}</div><div class="reveal-on-dark">${momentCard(p.moments[1])}</div><p class="subtle-on-dark">The question is not only whether the information travels—but whether someone can accept and reorganize the next step.</p><div class="actions"><button class="primary" data-action="next-beat">Continue: pressure builds</button><button class="secondary" data-action="back" data-step="3">Revisit departure decision</button></div></section>`,4);
+  app.innerHTML=shell(`<section class="disruption"><div class="stage">Disruption · Part 1 of 2</div><h2>Arthur’s plan changes.</h2><p>Imaging identifies an unexpected finding. Arthur needs an additional diagnostic step and review from an independent specialist working on the same campus. The specialist is not operated by Covenant Health and has separate intake and referral acceptance rules.</p><p><strong>Opening-day priority:</strong> ${escapeHTML(GAME.decisions.find(x=>x.id===state.readiness.priority).title)} · <strong>Registration:</strong> ${escapeHTML(REGISTRATION[state.readiness.registration].name)}</p><div class="choice-summary">${summary()}</div><div class="reveal-on-dark">${momentCard(p.moments[1])}${momentCard(p.moments[3])}</div><p class="subtle-on-dark">The question is not only whether the information travels—but whether someone can accept and reorganize the next step.</p><div class="actions"><button class="primary" data-action="next-beat">Continue: pressure builds</button><button class="secondary" data-action="back" data-step="3">Revisit departure decision</button></div></section>`,4);
 }
 function pressure(){
-  if(ids().length!==3||!state.strengthened){state.screen='strengthen';save();return render();}
+  if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
   const p=playState();
   app.innerHTML=shell(`<section class="disruption"><div class="stage">Disruption · Part 2 of 2</div><h2>Now the clock matters.</h2><p>Diagnostics are 45 minutes behind. Arthur has been fasting. The procedure opening is limited, his support person is temporarily away, and pharmacy closes soon.</p><div class="reveal-on-dark">${momentCard(p.moments[2])}</div><p class="subtle-on-dark">What the campus can <em>see</em> is different from what it has the authority and capacity to <em>change</em>.</p><div class="actions"><button class="primary" data-action="resolve">See Arthur’s full outcome</button><button class="secondary" data-action="back-beat">Back to the changed clinical plan</button></div></section>`,4);
 }
@@ -215,7 +236,7 @@ function designOutput(){
  fast:{operations:'Build a reassessment checkpoint before medications, pickup and discharge are finalized.',place:'Provide an organized discharge/pickup interface and pharmacy access that can handle late changes.',information:'Synchronize updated orders, medication readiness, support-person status and discharge instructions.'},
  adaptive:{operations:'Set criteria and ownership for moving Arthur between recovery levels and staffing models.',place:'Reserve adaptable recovery settings with suitable monitoring, utilities and team visibility.',information:'Share recovery readiness, reassessment decisions, staffing and transfer status.'},
  wellness:{operations:'Assign post-visit ownership; confirm that pharmacy and external partners accept referrals and follow-up tasks.',place:'Provide private transition/education locations and access to virtual follow-up support.',information:'Support closed-loop referrals, shared discharge plans, medication reconciliation and partner communication.'}}
- return {operations:[A[a].operations,C[c].operations,L[l].operations],place:[A[a].place,C[c].place,L[l].place],information:[A[a].information,C[c].information,L[l].information],foundation:[
+ return {operations:[A[a].operations,C[c].operations,L[l].operations,REGISTRATION[state.readiness?.registration||'department'].ops],place:[A[a].place,C[c].place,L[l].place,REGISTRATION[state.readiness?.registration||'department'].place],information:[A[a].information,C[c].information,L[l].information,'Partner referral acceptance and allowed information sharing require explicit agreements.'],foundation:[
   c==='comes'?'Plan resilient wireless coverage, device charging, mobility standards and operational support.':c==='core'?'Plan resilient shared infrastructure, common room standards and diagnostic integration.':'Plan shared workflow standards and reliable connectivity across service boundaries.',
   l==='wellness'?'Agree partner integration, privacy, consent and follow-up accountability before selecting products.':'Preserve the ability to change pathways and operations without rebuilding the clinical environment.'
  ]};
@@ -249,15 +270,15 @@ function designOutputFor(ch){
  try {state.choices=ch;return designOutput();} finally {state.choices=before;}
 }
 function lensScreen(){
- if(ids().length!==3||!state.strengthened){state.screen='strengthen';save();return render();}
+ if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
  const d=designOutput(),tab=state.lensTab==='design'?'design':'operations';
  const values=tab==='operations'?d.operations:d.place;
  const title=tab==='operations'?'Who makes this model work?':'What must the place make possible?';
  const context=tab==='operations'?'Operational success depends on roles, authority, capacity and coordination—not just choosing a service model.':'The choices imply different adjacencies, circulation, support spaces, room flexibility and infrastructure.';
- app.innerHTML=shell(`<section class="panel"><div class="stage">The Design & Operations Lens · 1 of 2</div><h2>Your design worked. But what did it require?</h2><p class="lede">Arthur’s changed pathway revealed the consequences. Now look beneath the experience to the commitments that would make your future possible.</p><div class="choice-summary">${summary()}</div><div class="lens-tabs" role="group" aria-label="Choose a lens"><button class="${tab==='operations'?'active':''}" data-action="lens-tab" data-tab="operations" aria-pressed="${tab==='operations'}">Operations</button><button class="${tab==='design'?'active':''}" data-action="lens-tab" data-tab="design" aria-pressed="${tab==='design'}">Design</button></div><h3 class="lens-heading">${title}</h3><p class="lede">${context}</p><div class="lens-cards">${values.map((v,i)=>`<article class="lens-card"><div class="stage">${['Arrival','Care model','Departure'][i]}</div><h3>${escapeHTML(option(state.choices[GAME.decisions[i].id]).name)}</h3><p>${escapeHTML(v)}</p></article>`).join('')}</div><section class="lens-support"><h3>${tab==='operations'?'What information must support action?':'What should remain resilient and adaptable?'}</h3><ul>${(tab==='operations'?d.information:d.foundation).map(v=>`<li>${escapeHTML(v)}</li>`).join('')}</ul></section><p class="decision-prompt">These are <strong>visioning implications</strong>, not confirmed ACHC service policies, room requirements or technology selections.</p><div class="actions"><button class="primary" data-action="go-commit">Choose a design commitment</button><button class="secondary" data-action="lens-back">Back to Arthur’s disruption</button></div></section>`,5);
+ app.innerHTML=shell(`<section class="panel"><div class="stage">The Design & Operations Lens · 1 of 2</div><h2>Your design worked. But what did it require?</h2><p class="lede">Arthur’s changed pathway revealed the consequences. Now look beneath the experience to the commitments that would make your future possible.</p><div class="choice-summary">${summary()}</div><div class="lens-tabs" role="group" aria-label="Choose a lens"><button class="${tab==='operations'?'active':''}" data-action="lens-tab" data-tab="operations" aria-pressed="${tab==='operations'}">Operations</button><button class="${tab==='design'?'active':''}" data-action="lens-tab" data-tab="design" aria-pressed="${tab==='design'}">Design</button></div><h3 class="lens-heading">${title}</h3><p class="lede">${context}</p><div class="lens-cards">${values.slice(0,3).map((v,i)=>`<article class="lens-card"><div class="stage">${['Arrival','Care model','Departure'][i]}</div><h3>${escapeHTML(option(state.choices[GAME.decisions[i].id]).name)}</h3><p>${escapeHTML(v)}</p></article>`).join('')}</div><section class="lens-support"><h3>Opening-day trade-offs and partner boundary</h3><p><strong>Operational now:</strong> ${escapeHTML(option(state.choices[state.readiness.priority]).name)}. The two other models are design directions, not fully operational promises.</p><p><strong>${escapeHTML(REGISTRATION[state.readiness.registration].name)}:</strong> ${escapeHTML(tab==='operations'?REGISTRATION[state.readiness.registration].ops:REGISTRATION[state.readiness.registration].place)}</p><p><strong>Unresolved dependency:</strong> an independent specialist must accept the referral; a shared campus does not convey shared clinical or scheduling authority.</p></section><section class="lens-support"><h3>${tab==='operations'?'What information must support action?':'What should remain resilient and adaptable?'}</h3><ul>${(tab==='operations'?d.information:d.foundation).map(v=>`<li>${escapeHTML(v)}</li>`).join('')}</ul></section><p class="decision-prompt">These are <strong>visioning implications</strong>, not confirmed ACHC service policies, room requirements or technology selections.</p><div class="actions"><button class="primary" data-action="go-commit">Choose a design commitment</button><button class="secondary" data-action="lens-back">Back to Arthur’s disruption</button></div></section>`,5);
 }
 function commitmentScreen(){
- if(ids().length!==3||!state.strengthened){state.screen='strengthen';save();return render();}
+ if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
  const items=commitmentOptions();
  const current=state.commitment;
  app.innerHTML=shell(`<section class="panel"><div class="stage">Design & Operations Lens · 2 of 2</div><h2>What would you protect in the ACHC vision?</h2><p class="lede">Choose one priority from your portfolio. Then decide whether ACHC should enable it in design now, coordinate an operating/partner agreement, or preserve the option for the future. There is no scored right answer.</p><div class="commit-options" role="radiogroup" aria-label="Select one commitment">${items.map(x=>`<label class="commit-option ${current&&current.id===x.id?'chosen':''}"><input type="radio" name="commitment" value="${x.id}" ${current&&current.id===x.id?'checked':''}><span><small>${x.source}</small><strong>${escapeHTML(x.title)}</strong><span>${escapeHTML(x.detail)}</span></span></label>`).join('')}</div><h3 class="lens-heading">What kind of commitment is it?</h3><div class="category-options" role="radiogroup" aria-label="Commitment timing and ownership">${[['enable','Enable now','Protect a design or infrastructure requirement'],['coordinate','Coordinate across services','Resolve ownership, workflow and partner agreements'],['preserve','Preserve for the future','Keep capacity for changing care models']].map(([id,name,detail])=>`<label class="category-option"><input type="radio" name="category" value="${id}" ${current&&current.category===id?'checked':''}><span><strong>${name}</strong><small>${detail}</small></span></label>`).join('')}</div><div id="msg" class="error" aria-live="polite"></div><div class="actions"><button class="primary" data-action="finish">Reveal my ACHC vision</button><button class="secondary" data-action="go-lens">Back to the lenses</button></div></section>`,5);
@@ -268,25 +289,25 @@ function finishCommitment(){
  if(!chosen||!category){document.getElementById('msg').textContent='Choose both one priority and one commitment category to continue.';return;}
  if(!commitmentOptions().some(x=>x.id===chosen.value) || !['enable','coordinate','preserve'].includes(category.value))return;
  state.commitment={id:chosen.value,category:category.value};state.screen='result';
- if(!state.completed){state.completed=true;event('vision_completed',{choices:state.choices,strengthened:state.strengthened,commitment:state.commitment,statuses:playState().moments.map(m=>m.status)});}
+ if(!state.completed){state.completed=true;event('vision_completed',{choices:state.choices,strengthened:state.strengthened,commitment:state.commitment,readiness:state.readiness,statuses:playState().moments.map(m=>m.status)});}
  save();render();
 }
 function resolveGame(){
- if(ids().length!==3||!state.strengthened){state.screen=!state.strengthened?'strengthen':'d3';save();return render();}
+ if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
  state.screen='lens';state.lensTab='operations';state.completed=false;state.commitment=null;
- event('disruption_resolved',{scores:scores(),statuses:playState().moments.map(m=>m.status)});
+ event('disruption_resolved',{scores:scores(),readiness:state.readiness,statuses:playState().moments.map(m=>m.status)});
  save();render();
 }
 function result(){
- if(ids().length!==3||!state.strengthened){state.screen='strengthen';save();return render();}
+ if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
  const p=playState(),t=totals(),b=GAME.budgets,d=designOutput();
  if(!state.commitment || !commitmentOptions().some(x=>x.id===state.commitment.id)){state.screen='commit';save();return render();}
  const selection=commitmentOptions().find(x=>x.id===state.commitment.id);
  const categoryLabel={enable:'Enable now',coordinate:'Coordinate across services',preserve:'Preserve for the future'}[state.commitment.category];
- app.innerHTML=shell(`<section class="panel"><div class="stage">Arthur’s reveal · Single-player v0.4</div><h2>${escapeHTML(p.headline)}</h2><p class="lede">No single total score defines whether Arthur’s day succeeded. Here is what your decisions enabled—and where they created dependencies.</p><div class="choice-summary">${summary()}</div><p><strong>Strengthened:</strong> ${escapeHTML(option(state.strengthened).strength)} · <strong>Resources:</strong> Capital ${t.capital}/${b.capital} · Change ${t.change}/${b.change} · Operations ${t.operations}/${b.operations}</p><h3>Four moments of Arthur’s day</h3><div class="moment-grid">${p.moments.map(momentCard).join('')}</div><section class="commitment-result"><div class="stage">Your ACHC commitment</div><h3>${escapeHTML(selection.title)}</h3><p>${escapeHTML(selection.detail)}</p><strong>${escapeHTML(categoryLabel)}</strong><p><small>Operational implication:</small> ${escapeHTML(selection.operations)}</p><p><small>Physical design implication:</small> ${escapeHTML(selection.place)}</p></section><section class="workshop-output"><div class="stage">From experience to an ACHC design decision</div><h2 class="output-heading">What must the campus enable?</h2><p>This is a discussion brief derived from your portfolio—not a room list, approved operating model, or technology specification.</p><div class="implication-grid">${implications('Operations · roles and authority',d.operations)}${implications('Place · spatial and environmental design',d.place)}${implications('Information · handoffs and context',d.information)}${implications('Foundation · resilience and flexibility',d.foundation)}</div><div class="decision-prompt"><strong>Workshop question:</strong> Which of these must be built into ACHC now, which depend on enterprise/partner agreements, and which should remain adaptable?</div></section><details class="score-details"><summary>View underlying capability scores (optional)</summary><p class="small">Comparative indicators, not a clinical success or safety rating.</p><div class="scoregrid">${GAME.dimensions.map((x,i)=>`<div class="score"><div class="scorehead"><span>${escapeHTML(x)}</span><span>${p.sc[i]} / 3</span></div><div class="meter"><span style="width:${p.sc[i]/3*100}%"></span></div></div>`).join('')}</div></details><div class="actions"><button class="primary" data-action="restart">Play again</button><button class="secondary" data-action="go-commit">Change commitment</button><button class="secondary" data-action="go-lens">Review Design & Operations</button><button class="secondary" data-action="back" data-step="3">Change departure decision</button><button class="secondary" data-action="review">Rebuild the whole design</button><button class="ghost" data-action="copy-brief">Copy design brief</button></div><div id="msg" class="error" aria-live="polite"></div></section>`,5);
+ app.innerHTML=shell(`<section class="panel"><div class="stage">Arthur’s reveal · Single-player v0.5</div><h2>${escapeHTML(p.headline)}</h2><p class="lede">No single total score defines whether Arthur’s day succeeded. Here is what your decisions enabled—and where they created dependencies.</p><div class="choice-summary">${summary()}</div><p><strong>Operational at opening:</strong> ${escapeHTML(option(state.strengthened).name)} · <strong>Registration:</strong> ${escapeHTML(REGISTRATION[state.readiness.registration].name)} · <strong>Resources:</strong> Capital ${t.capital}/${b.capital} · Change ${t.change}/${b.change} · Operations ${t.operations}/${b.operations}</p><h3>Five moments of Arthur’s day, including the independent partner</h3><div class="moment-grid">${p.moments.map(momentCard).join('')}</div><section class="commitment-result"><div class="stage">Your ACHC commitment</div><h3>${escapeHTML(selection.title)}</h3><p>${escapeHTML(selection.detail)}</p><strong>${escapeHTML(categoryLabel)}</strong><p><small>Operational implication:</small> ${escapeHTML(selection.operations)}</p><p><small>Physical design implication:</small> ${escapeHTML(selection.place)}</p></section><section class="workshop-output"><div class="stage">From experience to an ACHC design decision</div><h2 class="output-heading">What must the campus enable?</h2><p>This is a discussion brief derived from your portfolio—not a room list, approved operating model, or technology specification.</p><div class="implication-grid">${implications('Operations · roles and authority',d.operations)}${implications('Place · spatial and environmental design',d.place)}${implications('Information · handoffs and context',d.information)}${implications('Foundation · resilience and flexibility',d.foundation)}</div><div class="decision-prompt"><strong>Workshop question:</strong> Which of these must be built into ACHC now, which depend on enterprise/partner agreements, and which should remain adaptable?</div></section><details class="score-details"><summary>View underlying capability scores (optional)</summary><p class="small">Comparative indicators, not a clinical success or safety rating.</p><div class="scoregrid">${GAME.dimensions.map((x,i)=>`<div class="score"><div class="scorehead"><span>${escapeHTML(x)}</span><span>${p.sc[i]} / 3</span></div><div class="meter"><span style="width:${p.sc[i]/3*100}%"></span></div></div>`).join('')}</div></details><div class="actions"><button class="primary" data-action="restart">Play again</button><button class="secondary" data-action="go-commit">Change commitment</button><button class="secondary" data-action="go-lens">Review Design & Operations</button><button class="secondary" data-action="edit-readiness">Change opening-day priority</button><button class="secondary" data-action="back" data-step="3">Change departure decision</button><button class="secondary" data-action="review">Rebuild the whole design</button><button class="ghost" data-action="copy-brief">Copy design brief</button></div><div id="msg" class="error" aria-live="polite"></div></section>`,5);
 }
 function copyBrief(){
- const p=playState(),d=designOutput();const lines=[`Arthur · Care Well — ${CFG.gameVersion||'v0.3'}`, ...GAME.decisions.map(x=>`${x.title}: ${option(state.choices[x.id]).name}`),`Strengthened: ${option(state.strengthened).strength}`,'',...p.moments.map(m=>`${m.key.toUpperCase()} — ${m.status}: ${m.title}. ${m.detail} Design insight: ${m.why}`),'',...Object.entries(d).flatMap(([k,v])=>[k.toUpperCase(),...v.map(x=>`- ${x}`),''])];
+ const p=playState(),d=designOutput();const lines=[`Arthur · Care Well — ${CFG.gameVersion||'v0.5'}`, ...GAME.decisions.map(x=>`${x.title}: ${option(state.choices[x.id]).name}`),`Operational at opening: ${option(state.strengthened).name}`,`Registration: ${REGISTRATION[state.readiness.registration].name}`,`Registration trade-off: ${REGISTRATION[state.readiness.registration].cost}`,'',...p.moments.map(m=>`${m.key.toUpperCase()} — ${m.status}: ${m.title}. ${m.detail} Design insight: ${m.why}`),'',...Object.entries(d).flatMap(([k,v])=>[k.toUpperCase(),...v.map(x=>`- ${x}`),''])];
  const selected=state.commitment?commitmentOptions().find(x=>x.id===state.commitment.id):null;
  if(selected)lines.push('ACHC COMMITMENT',selected.title,selected.detail,'Category: '+({enable:'Enable now',coordinate:'Coordinate across services',preserve:'Preserve for the future'}[state.commitment.category]),'Operations: '+selected.operations,'Place: '+selected.place);
  const value=lines.join('\n');
@@ -303,13 +324,14 @@ app.addEventListener('click',e=>{
     case 'begin':begin();break;
     case 'choose':choose(btn.dataset.decision,btn.dataset.option);break;
     case 'back':back(Number(btn.dataset.step));break;
-    case 'strengthen':applyStrength(btn.dataset.option);break;
+    case 'set-readiness':setReadiness();break;
     case 'next-beat':state.screen='pressure';save();render();break;
     case 'back-beat':state.screen='disruption';save();render();break;
     case 'resolve':resolveGame();break;
     case 'lens-tab':state.lensTab=btn.dataset.tab==='design'?'design':'operations';save();render();break;
     case 'go-lens':state.screen='lens';save();render();break;
     case 'go-commit':state.screen='commit';save();render();break;
+    case 'edit-readiness':state.screen='readiness';state.completed=false;state.commitment=null;save();render();break;
     case 'lens-back':state.screen='pressure';save();render();break;
     case 'finish':finishCommitment();break;
     case 'copy-brief':copyBrief();break;
