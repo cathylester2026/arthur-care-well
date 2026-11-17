@@ -1,25 +1,21 @@
-# Arthur · Care Well — Single Player v1.0.0
+# Arthur · Care Well — Single Player v1.1
 
-## What changed since v0.9
+Full replacement for repository root (including `assets/`). No build step or external service required.
 
-The six optional **Design Moments** are now two compact, focused screens:
+## What's new
 
-1. **Explore the Futures:** three image-led alternatives, brief labels, and the central design question.
-2. **Understand the Impact:** one chosen image, what it enables for Arthur, what ACHC must take on, and a single switchable discipline view (Architecture / Functional Planning / Engineering).
+- ACHC campus, Arthur, and four-stop baseline remain the required new-journey opening.
+- Visiting the app always displays the story introduction. Use **Enter the Airdrie campus** for a fresh journey or **Resume saved journey** to continue previously saved v1.1 progress.
+- **Meet ACHC & Arthur** in the top bar lets players return to the introduction without erasing their saved work.
+- Every investment has two separate screens: **Impact** (benefit, resources, trade-off, future value) followed by **Arthur’s Reveal** (concrete, positive human-scale benefit, remaining dependency, design insight).
+- Reveals for all nine investments; the major unexpected clinical event still happens later, after opening-day prioritization and registration selection.
+- Existing two-screen Explore Futures / Understand Impact design moments are preserved.
+- New version-specific storage key `arthur-care-well-v11` avoids old sessions skipping the new story. Existing v1.0 state remains untouched but is not migrated.
 
-An optional expandable section retains the **Protect at opening** and **Enable as the model evolves** guidance. Persistent bottom navigation provides Return to Arthur / Continue and Compare Futures / Return to Arthur. No new required rounds, budgets, decision cards, or scoring rules have been introduced.
+## Deployment
 
-## Installation
+Copy the ZIP contents directly into the root of the GitHub Pages repository. Commit `index.html`, `app.js`, `styles.css`, `config.js`, `design-moments.js`, `design-ui.js`, `.nojekyll`, and the complete `assets/` folder. Verify the visible version `care-well-sp-1.1.0`.
 
-Unzip the contents into the root of the existing GitHub Pages repository, replacing prior copies of `index.html`, `styles.css`, `app.js`, `design-ui.js`, `design-moments.js`, `config.js`, and `README.md`; keep the entire `assets` directory. Commit and refresh the published site, using a hard refresh if the browser has cached v0.9 assets.
+## Narrative boundary
 
-No build system, backend, or additional services required. Asset names and page URLs remain relative for project GitHub Pages hosting.
-
-## Testing scope
-
-- JavaScript syntax checks: app.js and design-ui.js passed.
-- Chromium browser UI: all six Design Moments tested at 1365×900 and 390×844. Tested option selection, Explore → Impact, each of the three discipline tabs, Impact → Explore, opening-day disclosure and modal close. No JavaScript page errors were observed in these tests.
-- These tests ran in a browser with the application source injected because direct navigation to local files was blocked by the environment. Packaged image assets are present and were validated as files; this is **not** a confirmed visual test of GitHub Pages deployment.
-- The existing v0.9 single-player game logic and source data are otherwise unchanged; this pass did not repeat the full portfolio regression sweep.
-
-All Design Moment text and images are illustrative discussion material, not approved ACHC architectural drawings, clinical operating policies or engineering requirements.
+Arthur and the procedure are fictional. Pre-procedure tests are illustrative scenario requirements rather than clinical rules. Future operating arrangements are proposals for discussion, not approved ACHC specifications.

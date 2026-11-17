@@ -175,3 +175,24 @@ button:disabled{cursor:not-allowed;opacity:.56;transform:none}
  .moment-design-header span{display:none}
  .moment-compact-design .moment-tabs button{font-size:.78rem;min-width:0}
 }
+
+/* v1.1: Patient-first visual reveals and always-available story navigation */
+.top-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.story-return{background:transparent;border:1px solid #b9d1c8;color:#225649;padding:8px 12px;border-radius:22px;font-weight:750;font-size:.8rem;cursor:pointer}
+.arthur-reveal{max-width:1120px;margin:0 auto}
+.reveal-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);gap:18px;margin:20px 0}
+.reveal-scene{position:relative;min-height:365px;overflow:hidden;border-radius:20px;background:#dbe9df}
+.reveal-scene .design-scene.hero{height:100%;min-height:365px;box-shadow:none}
+.reveal-scene .design-scene.hero img{height:100%;width:100%;object-fit:cover}
+.reveal-speech{position:absolute;bottom:20px;left:20px;right:20px;background:rgba(14,50,43,.91);color:#fff;padding:17px 20px;border-radius:15px;font-size:1.15rem;font-weight:800;box-shadow:0 8px 24px #0004}
+.reveal-content{display:flex;flex-direction:column;gap:12px}
+.reveal-story{font-size:1.16rem;font-weight:700;line-height:1.46;padding:18px 20px;background:#edf3ee;border-radius:16px}
+.reveal-gain,.reveal-limit{padding:18px 20px;border-radius:16px;background:#e2f2eb;color:#183d32}
+.reveal-limit{background:#f8eee1;color:#534126}
+.reveal-gain strong,.reveal-limit strong{font-size:.91rem}
+.reveal-gain p,.reveal-limit p{margin:8px 0 0;line-height:1.48}
+.reveal-insight{display:flex;align-items:center;flex-wrap:wrap;gap:12px;background:#174637;color:white;border-radius:16px;padding:16px 20px}
+.reveal-insight strong{white-space:nowrap}.reveal-insight span{flex:1;min-width:220px}
+.reveal-insight button{border-color:#fff9;color:inherit}
+.reveal-footnote{color:#526a61;font-size:.85rem;margin:12px 0}
+@media(max-width:790px){.reveal-layout{grid-template-columns:1fr}.reveal-scene,.reveal-scene .design-scene.hero{min-height:250px}.reveal-speech{font-size:1rem}.top-controls{gap:6px}.story-return{font-size:.7rem;padding:7px 9px}}
