@@ -10,20 +10,20 @@ const GAME={
  {id:'human',letter:'C',name:'Human Welcome',tag:'A guide helps assemble Arthur’s visit.',creates:['Personal support','Early identification of needs','Help when the plan changes'],requires:['Cross-trained staff','Access to schedules','Authority to resolve problems'],risk:'A helpful person cannot fix the journey without authority.',cost:[1,2,3],impact:[3,2,1,2,1,1],strength:'Journey Navigator',boost:[0,1,0,1,1,1]}]},
  {id:'care',title:'How will care come together?',prompt:'Choose how imaging, diagnostics, surgery and pharmacy operate as one episode.',options:[
  {id:'network',letter:'A',name:'Department Network',tag:'Connect the departments while keeping each service in its own area.',creates:['One itinerary','Shared status','Concentrated expertise'],requires:['Shared scheduling','Standard handoffs','Protected linked slots'],risk:'Arthur’s information moves as one record. Arthur still moves as several appointments.',cost:[1,2,1],impact:[2,2,1,1,1,1],strength:'Coordinated Network',boost:[0,1,0,1,1,1]},
- {id:'core',letter:'B',name:'Shared Diagnostic Core',tag:'Create one preparation and diagnostic journey.',creates:['One check-in','Shared preparation','Ability to reorder the visit'],requires:['Universal rooms','Common booking','Joint operational authority'],risk:'Departments may share space while protecting separate schedules.',cost:[3,3,2],impact:[3,3,3,2,2,2],strength:'Integrated Diagnostic Platform',boost:[0,0,0,1,1,1]},
- {id:'comes',letter:'C',name:'Care Comes to Arthur',tag:'Arthur stays in one flexible setting while selected services move.',creates:['Less patient movement','Fewer repeated waits','Greater continuity'],requires:['Universal care rooms','Mobile equipment routes','Staff and equipment tracking'],risk:'Reducing Arthur’s movement increases operational movement.',cost:[2,3,3],impact:[3,3,3,2,2,2],strength:'Distributed Care Platform',boost:[0,0,0,1,1,0]}]},
+ {id:'core',letter:'B',name:'Shared Diagnostic Core',tag:'Create one preparation and diagnostic journey.',creates:['One check-in','Shared preparation','Ability to reorder the visit'],requires:['Universal rooms','Common booking','Joint operational authority'],risk:'Departments may share space while protecting separate schedules.',cost:[3,3,2],impact:[3,3,2,2,3,2],strength:'Integrated Diagnostic Platform',boost:[0,0,0,1,1,1]},
+ {id:'comes',letter:'C',name:'Care Comes to Arthur',tag:'Arthur stays in one flexible setting while selected services move.',creates:['Less patient movement','Fewer repeated waits','Greater continuity'],requires:['Universal care rooms','Mobile equipment routes','Staff and equipment tracking'],risk:'Reducing Arthur’s movement increases operational movement.',cost:[2,3,3],impact:[3,3,3,2,1,2],strength:'Distributed Care Platform',boost:[0,0,0,1,1,0]}]},
  {id:'leave',title:'How will Arthur leave ready?',prompt:'Choose what the campus resolves before Arthur goes home.',options:[
  {id:'fast',letter:'A',name:'Fast Exit',tag:'Prepare everything before Arthur is ready to leave.',creates:['Less discharge waiting','Medication ready','Coordinated pickup'],requires:['Early planning','Pharmacy integration','Support-person updates'],risk:'The model works best when recovery follows the expected path.',cost:[1,2,1],impact:[2,2,1,2,1,3],strength:'Responsive Departure',boost:[1,1,0,0,1,0]},
  {id:'adaptive',letter:'B',name:'Adaptive Recovery',tag:'Change Arthur’s recovery setting as Arthur’s needs change.',creates:['Recovery matched to need','Capacity for slower recovery','Better use of procedure space'],requires:['Different recovery settings','Flexible monitoring','Flexible staffing'],risk:'Flexible rooms do not create flexible care unless staffing moves too.',cost:[3,2,2],impact:[2,2,3,2,3,2],strength:'Elastic Recovery Platform',boost:[0,1,0,1,0,1]},
  {id:'wellness',letter:'C',name:'Connected Wellness',tag:'Use the procedure as the beginning of Arthur’s next care plan.',creates:['Confirmed follow-up','Connected medication and recovery','Continued support'],requires:['Wellness navigation','Virtual care','Named follow-up ownership'],risk:'A referral is not continuity unless capacity and ownership exist.',cost:[2,3,3],impact:[3,3,2,2,2,3],strength:'Closed-Loop Wellness',boost:[0,0,0,1,1,0]}]}],
  synergies:[['digital','network',1,1],['digital','core',0,1],['legible','core',2,1],['human','network',3,1],['human','comes',0,1],['core','adaptive',4,1],['comes','adaptive',2,1],['network','wellness',5,1],['core','wellness',1,1],['human','wellness',5,1]]
 };
-const STORAGE_KEY = 'arthur-care-well-v2';
+const STORAGE_KEY = 'arthur-care-well-v4';
 const OLD_KEY = 'arthur-care-well';
-const SCREEN_ORDER = ['intro','d1','d2','strengthen','d3','disruption','result'];
+const SCREEN_ORDER = ['intro','d1','d2','strengthen','d3','disruption','pressure','lens','commit','result'];
 const app = document.getElementById('app');
 const newId = () => (window.crypto && typeof crypto.randomUUID==='function') ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const fresh = () => ({screen:'intro', choices:{}, strengthened:null, startedAt:null, sessionId:newId(), events:[], completed:false});
+const fresh = () => ({screen:'intro', choices:{}, strengthened:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null});
 function load() {
   try {
     const raw=localStorage.getItem(STORAGE_KEY);
@@ -40,11 +40,15 @@ function load() {
     if (typeof s.sessionId==='string') safe.sessionId=s.sessionId;
     if (Array.isArray(s.events)) safe.events=s.events.slice(-100);
     safe.completed=!!s.completed;
+    if (['operations','design'].includes(s.lensTab)) safe.lensTab=s.lensTab;
+    if (s.commitment && typeof s.commitment==='object' && typeof s.commitment.id==='string' && ['enable','coordinate','preserve'].includes(s.commitment.category)) safe.commitment={id:s.commitment.id,category:s.commitment.category};
     // Never resume a screen without its prerequisites.
-    if (['d2','strengthen','d3','disruption','result'].includes(safe.screen) && !safe.choices.arrival) safe.screen='d1';
-    if (['strengthen','d3','disruption','result'].includes(safe.screen) && !safe.choices.care) safe.screen='d2';
-    if (['d3','disruption','result'].includes(safe.screen) && !safe.strengthened) safe.screen='strengthen';
-    if (['disruption','result'].includes(safe.screen) && !safe.choices.leave) safe.screen='d3';
+    if (['d2','strengthen','d3','disruption','pressure','lens','commit','result'].includes(safe.screen) && !safe.choices.arrival) safe.screen='d1';
+    if (['strengthen','d3','disruption','pressure','lens','commit','result'].includes(safe.screen) && !safe.choices.care) safe.screen='d2';
+    if (['d3','disruption','pressure','lens','commit','result'].includes(safe.screen) && !safe.strengthened) safe.screen='strengthen';
+    if (['disruption','pressure','lens','commit','result'].includes(safe.screen) && !safe.choices.leave) safe.screen='d3';
+    if (['commit','result'].includes(safe.screen) && !safe.choices.leave) safe.screen='d3';
+    if (safe.screen==='result' && (!safe.commitment || !['arrival','care','leave'].includes(safe.commitment.id))) safe.screen='commit';
     return safe;
   } catch (err) { console.warn('Could not restore game:',err); return null; }
 }
@@ -96,12 +100,15 @@ function render(){
   if(state.screen==='intro')return intro();
   if(state.screen==='strengthen')return strengthen();
   if(state.screen==='disruption')return disruption();
+  if(state.screen==='pressure')return pressure();
   if(/^d[1-3]$/.test(state.screen))return decision(Number(state.screen.slice(1)));
+  if(state.screen==='lens')return lensScreen();
+  if(state.screen==='commit')return commitmentScreen();
   if(state.screen==='result')return result();
   state.screen='intro';save();intro();
 }
 function intro(){
-  const resumable=!!state.startedAt && state.screen==='intro' && !!ids().length;
+  
   app.innerHTML=shell(`<section class="hero"><div class="eyebrow">One visit · Three decisions · One disruption</div><h1>Care<br>Well.</h1><p>Arthur is coming to a wellness campus for imaging, diagnostics and a planned outpatient procedure. Design how the campus meets Arthur, assembles care and sends Arthur home ready. Then see what holds when the plan changes.</p><p class="intro-note">You will make three design decisions with limited Capital, Change and Operations resources, strengthen one choice, and then face an unexpected change.</p><div class="actions"><button class="primary" data-action="begin">Begin Arthur’s day</button></div></section>`);
 }
 function begin(){state=fresh();state.startedAt=new Date().toISOString();state.screen='d1';event('game_started');render();}
@@ -120,7 +127,7 @@ function choose(did,oid){
   for(let i=n;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
   if(n<=2)state.strengthened=null;
   state.choices[did]=oid;
-  state.completed=false;
+  state.completed=false;state.commitment=null;
   state.screen=n===1?'d2':n===2?'strengthen':'disruption';
   event('decision_selected',{decision:did,option:oid});render();
 }
@@ -128,7 +135,9 @@ function back(n){
   if(n<1||n>3)return;
   // Preserve previous choices only up to the preceding step, then allow a clean re-selection.
   for(let i=n-1;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
-  state.strengthened=null;state.completed=false;state.screen=`d${n}`;save();render();
+  // Revisiting departure must not erase an earlier strengthening decision.
+  if(n<=2)state.strengthened=null;
+  state.completed=false;state.commitment=null;state.screen=`d${n}`;save();render();
 }
 function strengthen(){
   if(!state.choices.arrival||!state.choices.care){state.screen='d2';save();return render();}
@@ -137,35 +146,153 @@ function strengthen(){
 }
 function applyStrength(id){if(!ids().includes(id))return;state.strengthened=id;state.screen='d3';event('option_strengthened',{option:id});render();}
 function summary(){return GAME.decisions.map(d=>{const o=option(state.choices[d.id]);return `<div><small>${escapeHTML(d.title)}</small><strong>${o?escapeHTML(o.name):'—'}</strong></div>`;}).join('');}
+// v0.3 story engine: discrete moments, never a single threshold hiding other effects.
+const SEVERITY={helped:2,fragile:1,hurt:0};
+function verdict(status,title,detail,why){return {status,title,detail,why};}
+function playState(){
+  const a=state.choices.arrival,c=state.choices.care,l=state.choices.leave;
+  const strong=state.strengthened;
+  const sc=scores();
+  // Diagnostic re-plan depends on shared clinical context AND ability to move the plan.
+  let clinical;
+  if(c==='core') clinical=verdict('helped','One diagnostic episode','Shared preparation and diagnostic access let Arthur’s plan be resequenced.','This works only when booking rules and clinical responsibility are genuinely shared.');
+  else if(c==='comes') clinical=verdict('fragile','The team must come to Arthur','Arthur stays in place, but specialist review and the additional diagnostic require coordinated staff and mobile equipment.','Patient movement is reduced; operational movement is increased.');
+  else clinical=verdict('fragile','Connected departments, separate queues','The result can travel between departments, but Arthur’s next step competes with independently managed appointments.','A shared itinerary does not guarantee control of linked capacity.');
+  if(c==='network'&&strong==='network')clinical=verdict('helped','Linked slots are protected','The strengthened network supports a rebooked test and an accountable interdepartmental handoff.','Protected slots and service ownership make a distributed model work.');
+  if(c==='comes'&&strong==='comes')clinical=verdict('helped','Mobile resources respond','The distributed-care platform locates equipment and brings the next clinical step to Arthur.','This depends on mobilization protocols, tracking and room readiness.');
+  // An unmanaged front door can undermine otherwise well-linked care.
+  if(a==='digital'&&c==='network'&&strong!=='network')clinical=verdict('hurt','The itinerary changes faster than the handoff','Arthur receives an updated itinerary, but no single team has committed to the new diagnostic slot.','Digital directions cannot substitute for clinical acceptance of the next step.');
+  let ops;
+  if(c==='core') ops=verdict('fragile','Shared space, contested capacity','The shared diagnostic core helps the team see the bottleneck, but specialties still have to release capacity.','Adjacency is not the same thing as joint scheduling authority.');
+  else if(c==='comes') ops=verdict('fragile','Arthur waits; teams and equipment move','The delayed diagnostic pushes work onto mobile teams and equipment routes rather than onto Arthur’s feet.','Flexible patient space creates staff movement, storage and transport demands.');
+  else ops=verdict('hurt','Separate queues absorb the delay','Each department protects its own schedule; Arthur’s procedure window becomes harder to hold.','Cross-department escalation needs a named decision maker and protected linked slots.');
+  if(c==='core'&&['core','adaptive'].includes(strong))ops=verdict('helped','One team reallocates diagnostic capacity','A strengthened shared core supports an authorized adjustment to room, staff and diagnostic availability.','Joint resource oversight needs a real operational owner.');
+  if(c==='comes'&&strong==='comes')ops=verdict('helped','Mobile teams absorb the change','The strengthened distributed-care platform helps move equipment and staff into the right setting.','This requires reliable staffing coverage and equipment availability.');
+  if(c==='network'&&strong==='network')ops=verdict('fragile','Linked slots protect some capacity','Protected cross-service slots reduce the impact, but the procedure window remains exposed to competing demand.','A connected schedule helps without creating extra diagnostic capacity.');
+  if(l==='adaptive'&&ops.status==='hurt')ops=verdict('fragile','Recovery can absorb the delay','Different recovery settings protect some procedural capacity, although diagnostic coordination is still weak.','Flexible recovery needs staffing and monitoring that can move with demand.');
+  let home;
+  if(l==='fast')home=verdict('fragile','Departure was planned for yesterday’s pathway','Pickup and medications were prepared early, but the unexpected finding requires the plan to be checked again.','A fast exit is not a complete transition when clinical needs change.');
+  if(l==='adaptive')home=verdict('fragile','Recovery adapts; follow-up is still a handoff','Arthur can be monitored for longer, but the new clinical finding still needs a named follow-up owner.','Adaptable recovery space does not automatically close the loop after discharge.');
+  if(l==='wellness')home=verdict('helped','Someone owns Arthur’s next step','Medication, follow-up and partner communication remain part of one care episode.','The partner or receiving team must actually accept responsibility.');
+  if(l==='fast'&&c==='network'&&strong!=='fast')home=verdict('hurt','Fast exit, unfinished transition','The disrupted visit invalidates early discharge assumptions; pickup, medication and follow-up may be out of sync.','Preparation does not replace reassessment and confirmed ownership.');
+  if(l==='fast'&&strong==='fast')home=verdict('helped','Departure is rebuilt around new information','Responsive departure updates medications and pickup after the revised plan is confirmed.','The strengthened departure process closes the loop on changes.');
+  if(l==='adaptive'&&strong==='adaptive')home=verdict('helped','Recovery and transition are actively reassessed','Flexible staffing and monitoring give Arthur time for clinical reassessment and an orderly transition.','An assigned clinician still needs to confirm follow-up ownership.');
+  if(l==='wellness'&&c==='network'&&strong!=='wellness'&&strong!=='network')home=verdict('fragile','A referral exists; acceptance is uncertain','Connected wellness identifies next steps, but separated departments may not verify that a partner accepted the referral.','A referral is not a closed-loop handoff.');
+  // Arrival is not erased by a strong care model.
+  let access;
+  if(a==='digital')access=verdict(strong==='digital'?'helped':'fragile','Arrival by digital itinerary',strong==='digital'?'Arthur receives accessible updated directions as the plan changes.':'Arthur receives updates, but directions may no longer reflect the changed clinic or timing.','A current source of truth and human fallback are essential.');
+  else if(a==='legible')access=verdict('helped','A building Arthur can read','Visible routes and landmarks let Arthur navigate without depending on his phone.','Staff and signs must still address changed clinical destinations.');
+  else access=verdict('helped','A human helps Arthur reorient','The welcome guide identifies the changed needs and helps coordinate the next destination.','The guide requires access to current status and someone empowered to act.');
+  if(a==='human'&&strong==='human'&&ops.status==='hurt')ops=verdict('fragile','The navigator escalates the conflict','Arthur’s guide can identify a decision maker and help protect the next step, but the capacity constraint remains.','Human authority can resolve an escalation, not manufacture a free diagnostic room.');
+  const moments=[{key:'arrival',...access},{key:'clinical',...clinical},{key:'ops',...ops},{key:'home',...home}];
+  const counts={helped:0,fragile:0,hurt:0};moments.forEach(m=>counts[m.status]++);
+  const headline=counts.hurt>=2?'Several connections fail under pressure':counts.hurt===1?'One critical connection breaks':counts.fragile>=3?'The journey works, but depends on extra effort':'A connected journey with visible dependencies';
+  return {moments,counts,headline,sc};
+}
+function stamp(m){return `<span class="status status-${m.status}">${m.status==='helped'?'Helped':m.status==='fragile'?'Helped, but fragile':'Hurt'}</span>`;}
+function momentCard(m){return `<article class="moment-card"><div class="moment-top">${stamp(m)}</div><h3>${escapeHTML(m.title)}</h3><p>${escapeHTML(m.detail)}</p><p class="why"><strong>Design insight:</strong> ${escapeHTML(m.why)}</p></article>`;}
 function disruption(){
-  if(ids().length!==3){state.screen='d3';save();return render();}
-  app.innerHTML=shell(`<section class="disruption"><div class="stage">The plan changes</div><h2>Imaging finds something unexpected.</h2><p>Arthur can still have the procedure today, but the campus must reorganize the visit.</p><ul><li>A specialist must review the finding.</li><li>Another diagnostic test is required.</li><li>Diagnostics are running 45 minutes behind.</li><li>Arthur has been fasting.</li><li>The support person has temporarily left.</li><li>Pharmacy closes in 90 minutes.</li><li>The procedure room has a limited opening.</li></ul><div class="choice-summary">${summary()}</div><div class="actions"><button class="primary" data-action="resolve">See what holds</button><button class="secondary" data-action="back" data-step="3">Revisit final decision</button></div></section>`,4);
+  if(ids().length!==3||!state.strengthened){state.screen=!state.strengthened?'strengthen':'d3';save();return render();}
+  const p=playState();
+  app.innerHTML=shell(`<section class="disruption"><div class="stage">Disruption · Part 1 of 2</div><h2>Arthur’s plan changes.</h2><p>Imaging identifies an unexpected finding. Arthur needs a specialist review and one more diagnostic step before his planned outpatient procedure can safely proceed.</p><div class="choice-summary">${summary()}</div><div class="reveal-on-dark">${momentCard(p.moments[1])}</div><p class="subtle-on-dark">The question is not only whether the information travels—but whether someone can accept and reorganize the next step.</p><div class="actions"><button class="primary" data-action="next-beat">Continue: pressure builds</button><button class="secondary" data-action="back" data-step="3">Revisit departure decision</button></div></section>`,4);
 }
-function outcome(s){
-  const low=s.filter(x=>x<=1).length;
-  if(s[3]<2)return ['Coordinated, but no one can act','The campus can see Arthur’s changed plan, but no role has enough authority to protect the procedure window and reorder the episode.'];
-  if(s[4]<2)return ['The plan has nowhere to wait','The change is understood, but the campus lacks appropriate capacity to absorb delay without blocking another service.'];
-  if(s[5]<2)return ['Procedure complete. Transition incomplete.','Arthur may receive the procedure, but medication, transportation or follow-up remains unresolved.'];
-  if(low>=3)return ['A collection of services','Arthur’s information moves, but Arthur must restart parts of the journey when the plan changes.'];
-  if(s.filter(x=>x===3).length>=4)return ['A resilient wellness campus','The campus reorders the episode around Arthur, protects the procedure window and keeps departure needs connected.'];
-  return ['Coordinated, but brittle','The procedure can proceed, but staff intervention and added waiting are needed to hold the journey together.'];
+function pressure(){
+  if(ids().length!==3||!state.strengthened){state.screen='strengthen';save();return render();}
+  const p=playState();
+  app.innerHTML=shell(`<section class="disruption"><div class="stage">Disruption · Part 2 of 2</div><h2>Now the clock matters.</h2><p>Diagnostics are 45 minutes behind. Arthur has been fasting. The procedure opening is limited, his support person is temporarily away, and pharmacy closes soon.</p><div class="reveal-on-dark">${momentCard(p.moments[2])}</div><p class="subtle-on-dark">What the campus can <em>see</em> is different from what it has the authority and capacity to <em>change</em>.</p><div class="actions"><button class="primary" data-action="resolve">See Arthur’s full outcome</button><button class="secondary" data-action="back-beat">Back to the changed clinical plan</button></div></section>`,4);
 }
-const moments={
-  arrival:{digital:'Arthur gets live directions and schedule updates, provided the information is accurate and accessible.',legible:'Arthur can see where to go without relying on a phone, but still needs help if appointments change.',human:'A welcome guide identifies his needs, but must have authority to fix a changed itinerary.'},
-  care:{network:'Departments share status, but linked slots and handoffs remain critical.',core:'Shared preparation and diagnostics make reordering possible if teams share authority.',comes:'Arthur moves less, while staff, equipment and schedules must move more.'},
-  leave:{fast:'Departure is prepared early, but the unexpected result may change medication and pickup needs.',adaptive:'Recovery space can flex, provided staffing and monitoring change with Arthur.',wellness:'Follow-up can extend beyond the visit if a partner or team actually accepts responsibility.'}
-};
+function designOutput(){
+ const a=state.choices.arrival,c=state.choices.care,l=state.choices.leave;
+ const A={
+ digital:{operations:'Own real-time itinerary updates and escalation when a schedule or destination changes.',place:'Provide digital-ready arrival points, accessible wayfinding fallback and supported check-in locations.',information:'Maintain consistent place names, accessible directions and live appointment status.'},
+ legible:{operations:'Keep physical wayfinding and temporary route changes current; provide help at decision points.',place:'Protect clear sightlines, consistent landmarks, barrier-free routes and visible service entries.',information:'Maintain a single destination naming standard shared by signs, maps and appointment instructions.'},
+ human:{operations:'Define navigator coverage, cross-service escalation authority and what problems the welcome team may resolve.',place:'Provide staffed welcome positions, privacy for complex discussions and convenient access to multiple routes.',information:'Give navigators role-appropriate access to schedules, destinations and live service readiness.'}}
+ const C={
+ network:{operations:'Establish linked slots, named sending/receiving owners and an escalation pathway across departments.',place:'Design intuitive, accessible links and handoff points among otherwise distinct service zones.',information:'Create a common itinerary, status model and closed-loop interdepartmental handoffs.'},
+ core:{operations:'Establish shared diagnostic scheduling authority and agreed rules for reallocating rooms, staff and slots.',place:'Plan a shared preparation core, compatible multipurpose support spaces and short diagnostic transfer paths.',information:'Expose capacity, readiness, diagnostic status and clinical ownership across participating services.'},
+ comes:{operations:'Coordinate mobile staffing, device dispatch, infection control, turnaround and equipment tracking.',place:'Provide flexible care rooms, equipment storage, charging, service routes and adequate clearances.',information:'Connect patient context, room readiness, equipment location and team assignments.'}}
+ const L={
+ fast:{operations:'Build a reassessment checkpoint before medications, pickup and discharge are finalized.',place:'Provide an organized discharge/pickup interface and pharmacy access that can handle late changes.',information:'Synchronize updated orders, medication readiness, support-person status and discharge instructions.'},
+ adaptive:{operations:'Set criteria and ownership for moving Arthur between recovery levels and staffing models.',place:'Reserve adaptable recovery settings with suitable monitoring, utilities and team visibility.',information:'Share recovery readiness, reassessment decisions, staffing and transfer status.'},
+ wellness:{operations:'Assign post-visit ownership; confirm that pharmacy and external partners accept referrals and follow-up tasks.',place:'Provide private transition/education locations and access to virtual follow-up support.',information:'Support closed-loop referrals, shared discharge plans, medication reconciliation and partner communication.'}}
+ return {operations:[A[a].operations,C[c].operations,L[l].operations],place:[A[a].place,C[c].place,L[l].place],information:[A[a].information,C[c].information,L[l].information],foundation:[
+  c==='comes'?'Plan resilient wireless coverage, device charging, mobility standards and operational support.':c==='core'?'Plan resilient shared infrastructure, common room standards and diagnostic integration.':'Plan shared workflow standards and reliable connectivity across service boundaries.',
+  l==='wellness'?'Agree partner integration, privacy, consent and follow-up accountability before selecting products.':'Preserve the ability to change pathways and operations without rebuilding the clinical environment.'
+ ]};
+}
+function implications(title,items){return `<section class="implication"><h3>${escapeHTML(title)}</h3><ul>${items.map(v=>`<li>${escapeHTML(v)}</li>`).join('')}</ul></section>`;}
+// The design/operations lens sits between Arthur's disruption and the final vision.
+function commitmentOptions(ch=state.choices){
+ const care=ch.care,arr=ch.arrival,leave=ch.leave;
+ const names={
+  network:['Cross-service handoff authority','Agree who receives Arthur, owns rebooking and protects linked slots.'],
+  core:['Shared diagnostic capacity','Agree joint scheduling rules, pooled readiness visibility and response authority.'],
+  comes:['Mobile care readiness','Agree who dispatches mobile teams, maintains equipment and manages room turnaround.']
+ };
+ const arrival={
+  digital:['Accessible arrival and fallback','Protect digital check-in with understandable physical and staffed alternatives.'],
+  legible:['Intuitive campus navigation','Protect legible routes, landmarks and barrier-free connections.'],
+  human:['Empowered welcome team','Define navigator authority, coverage and access to live journey information.']
+ };
+ const departure={
+  fast:['Responsive departure planning','Reassess discharge, medication and pickup readiness when clinical plans change.'],
+  adaptive:['Adaptable recovery settings','Protect changing recovery acuity, monitoring and staffing capacity.'],
+  wellness:['Closed-loop partner follow-up','Assign follow-up ownership and confirm that partners accept handoffs.']
+ };
+ return [{id:'care',title:names[care][0],detail:names[care][1],source:'Care model',operations:designOutputFor(ch).operations[1],place:designOutputFor(ch).place[1]},
+         {id:'arrival',title:arrival[arr][0],detail:arrival[arr][1],source:'Arrival',operations:designOutputFor(ch).operations[0],place:designOutputFor(ch).place[0]},
+         {id:'leave',title:departure[leave][0],detail:departure[leave][1],source:'Departure',operations:designOutputFor(ch).operations[2],place:designOutputFor(ch).place[2]}];
+}
+// Temporarily use the current portfolio; this function only reads the design-output mapping.
+function designOutputFor(ch){
+ const before=state.choices;
+ try {state.choices=ch;return designOutput();} finally {state.choices=before;}
+}
+function lensScreen(){
+ if(ids().length!==3||!state.strengthened){state.screen='strengthen';save();return render();}
+ const d=designOutput(),tab=state.lensTab==='design'?'design':'operations';
+ const values=tab==='operations'?d.operations:d.place;
+ const title=tab==='operations'?'Who makes this model work?':'What must the place make possible?';
+ const context=tab==='operations'?'Operational success depends on roles, authority, capacity and coordination—not just choosing a service model.':'The choices imply different adjacencies, circulation, support spaces, room flexibility and infrastructure.';
+ app.innerHTML=shell(`<section class="panel"><div class="stage">The Design & Operations Lens · 1 of 2</div><h2>Your design worked. But what did it require?</h2><p class="lede">Arthur’s changed pathway revealed the consequences. Now look beneath the experience to the commitments that would make your future possible.</p><div class="choice-summary">${summary()}</div><div class="lens-tabs" role="group" aria-label="Choose a lens"><button class="${tab==='operations'?'active':''}" data-action="lens-tab" data-tab="operations" aria-pressed="${tab==='operations'}">Operations</button><button class="${tab==='design'?'active':''}" data-action="lens-tab" data-tab="design" aria-pressed="${tab==='design'}">Design</button></div><h3 class="lens-heading">${title}</h3><p class="lede">${context}</p><div class="lens-cards">${values.map((v,i)=>`<article class="lens-card"><div class="stage">${['Arrival','Care model','Departure'][i]}</div><h3>${escapeHTML(option(state.choices[GAME.decisions[i].id]).name)}</h3><p>${escapeHTML(v)}</p></article>`).join('')}</div><section class="lens-support"><h3>${tab==='operations'?'What information must support action?':'What should remain resilient and adaptable?'}</h3><ul>${(tab==='operations'?d.information:d.foundation).map(v=>`<li>${escapeHTML(v)}</li>`).join('')}</ul></section><p class="decision-prompt">These are <strong>visioning implications</strong>, not confirmed ACHC service policies, room requirements or technology selections.</p><div class="actions"><button class="primary" data-action="go-commit">Choose a design commitment</button><button class="secondary" data-action="lens-back">Back to Arthur’s disruption</button></div></section>`,5);
+}
+function commitmentScreen(){
+ if(ids().length!==3||!state.strengthened){state.screen='strengthen';save();return render();}
+ const items=commitmentOptions();
+ const current=state.commitment;
+ app.innerHTML=shell(`<section class="panel"><div class="stage">Design & Operations Lens · 2 of 2</div><h2>What would you protect in the ACHC vision?</h2><p class="lede">Choose one priority from your portfolio. Then decide whether ACHC should enable it in design now, coordinate an operating/partner agreement, or preserve the option for the future. There is no scored right answer.</p><div class="commit-options" role="radiogroup" aria-label="Select one commitment">${items.map(x=>`<label class="commit-option ${current&&current.id===x.id?'chosen':''}"><input type="radio" name="commitment" value="${x.id}" ${current&&current.id===x.id?'checked':''}><span><small>${x.source}</small><strong>${escapeHTML(x.title)}</strong><span>${escapeHTML(x.detail)}</span></span></label>`).join('')}</div><h3 class="lens-heading">What kind of commitment is it?</h3><div class="category-options" role="radiogroup" aria-label="Commitment timing and ownership">${[['enable','Enable now','Protect a design or infrastructure requirement'],['coordinate','Coordinate across services','Resolve ownership, workflow and partner agreements'],['preserve','Preserve for the future','Keep capacity for changing care models']].map(([id,name,detail])=>`<label class="category-option"><input type="radio" name="category" value="${id}" ${current&&current.category===id?'checked':''}><span><strong>${name}</strong><small>${detail}</small></span></label>`).join('')}</div><div id="msg" class="error" aria-live="polite"></div><div class="actions"><button class="primary" data-action="finish">Reveal my ACHC vision</button><button class="secondary" data-action="go-lens">Back to the lenses</button></div></section>`,5);
+}
+function finishCommitment(){
+ const chosen=document.querySelector('input[name="commitment"]:checked');
+ const category=document.querySelector('input[name="category"]:checked');
+ if(!chosen||!category){document.getElementById('msg').textContent='Choose both one priority and one commitment category to continue.';return;}
+ if(!commitmentOptions().some(x=>x.id===chosen.value) || !['enable','coordinate','preserve'].includes(category.value))return;
+ state.commitment={id:chosen.value,category:category.value};state.screen='result';
+ if(!state.completed){state.completed=true;event('vision_completed',{choices:state.choices,strengthened:state.strengthened,commitment:state.commitment,statuses:playState().moments.map(m=>m.status)});}
+ save();render();
+}
 function resolveGame(){
-  if(ids().length!==3||!state.strengthened)return;
-  state.screen='result';
-  if(!state.completed){state.completed=true;event('disruption_resolved',{scores:scores()});
-    if(db)db.from('game_runs').insert({session_id:state.sessionId,game_version:CFG.gameVersion||'dev',choices:state.choices,strengthened_option:state.strengthened,scores:scores(),resource_use:totals(),completed_at:new Date().toISOString()}).then(({error})=>{if(error)console.warn('Telemetry:',error.message)}).catch(()=>{});
-  }
-  save();render();
+ if(ids().length!==3||!state.strengthened){state.screen=!state.strengthened?'strengthen':'d3';save();return render();}
+ state.screen='lens';state.lensTab='operations';state.completed=false;state.commitment=null;
+ event('disruption_resolved',{scores:scores(),statuses:playState().moments.map(m=>m.status)});
+ save();render();
 }
 function result(){
-  const s=scores(),o=outcome(s),t=totals(),b=GAME.budgets;
-  app.innerHTML=shell(`<section class="panel"><div class="stage">Arthur's reveal</div><h2>${escapeHTML(o[0])}</h2><p class="lede">${escapeHTML(o[1])}</p><div class="choice-summary">${summary()}</div><h3>What Arthur experiences</h3><div class="moment-list">${GAME.decisions.map((d,i)=>{const id=state.choices[d.id];return `<div><strong>${i+1}. ${escapeHTML(option(id).name)}</strong><p>${escapeHTML(moments[d.id][id])}</p></div>`;}).join('')}</div><div class="outcome"><strong>Strengthened:</strong> ${escapeHTML(option(state.strengthened)?.strength||'None')}<br><strong>Resources:</strong> Capital ${t.capital}/${b.capital} · Change ${t.change}/${b.change} · Operations ${t.operations}/${b.operations}</div><h3>Six conditions of connected care</h3><div class="scoregrid">${GAME.dimensions.map((d,i)=>`<div class="score"><div class="scorehead"><span>${escapeHTML(d)}</span><span>${s[i]} / 3</span></div><div class="meter"><span style="width:${s[i]/3*100}%"></span></div></div>`).join('')}</div><h3>Design translation</h3><p>Use these prompts to move from a portfolio of ideas to requirements for ACHC.</p><ul><li><strong>Experience:</strong> Where does Arthur still need to repeat a step or ask for help?</li><li><strong>Operations:</strong> Who can reorder the visit when circumstances change?</li><li><strong>Information:</strong> Which teams and partner services need the same plan and status?</li><li><strong>Place:</strong> Which space and patient routes absorb a 45-minute delay?</li><li><strong>Foundation:</strong> What shared standards and infrastructure make the handoffs reliable?</li></ul><div class="actions"><button class="primary" data-action="restart">Play again</button><button class="secondary" data-action="review">Revise your design</button></div></section>`,5);
+ if(ids().length!==3||!state.strengthened){state.screen='strengthen';save();return render();}
+ const p=playState(),t=totals(),b=GAME.budgets,d=designOutput();
+ if(!state.commitment || !commitmentOptions().some(x=>x.id===state.commitment.id)){state.screen='commit';save();return render();}
+ const selection=commitmentOptions().find(x=>x.id===state.commitment.id);
+ const categoryLabel={enable:'Enable now',coordinate:'Coordinate across services',preserve:'Preserve for the future'}[state.commitment.category];
+ app.innerHTML=shell(`<section class="panel"><div class="stage">Arthur’s reveal · Single-player v0.4</div><h2>${escapeHTML(p.headline)}</h2><p class="lede">No single total score defines whether Arthur’s day succeeded. Here is what your decisions enabled—and where they created dependencies.</p><div class="choice-summary">${summary()}</div><p><strong>Strengthened:</strong> ${escapeHTML(option(state.strengthened).strength)} · <strong>Resources:</strong> Capital ${t.capital}/${b.capital} · Change ${t.change}/${b.change} · Operations ${t.operations}/${b.operations}</p><h3>Four moments of Arthur’s day</h3><div class="moment-grid">${p.moments.map(momentCard).join('')}</div><section class="commitment-result"><div class="stage">Your ACHC commitment</div><h3>${escapeHTML(selection.title)}</h3><p>${escapeHTML(selection.detail)}</p><strong>${escapeHTML(categoryLabel)}</strong><p><small>Operational implication:</small> ${escapeHTML(selection.operations)}</p><p><small>Physical design implication:</small> ${escapeHTML(selection.place)}</p></section><section class="workshop-output"><div class="stage">From experience to an ACHC design decision</div><h2 class="output-heading">What must the campus enable?</h2><p>This is a discussion brief derived from your portfolio—not a room list, approved operating model, or technology specification.</p><div class="implication-grid">${implications('Operations · roles and authority',d.operations)}${implications('Place · spatial and environmental design',d.place)}${implications('Information · handoffs and context',d.information)}${implications('Foundation · resilience and flexibility',d.foundation)}</div><div class="decision-prompt"><strong>Workshop question:</strong> Which of these must be built into ACHC now, which depend on enterprise/partner agreements, and which should remain adaptable?</div></section><details class="score-details"><summary>View underlying capability scores (optional)</summary><p class="small">Comparative indicators, not a clinical success or safety rating.</p><div class="scoregrid">${GAME.dimensions.map((x,i)=>`<div class="score"><div class="scorehead"><span>${escapeHTML(x)}</span><span>${p.sc[i]} / 3</span></div><div class="meter"><span style="width:${p.sc[i]/3*100}%"></span></div></div>`).join('')}</div></details><div class="actions"><button class="primary" data-action="restart">Play again</button><button class="secondary" data-action="go-commit">Change commitment</button><button class="secondary" data-action="go-lens">Review Design & Operations</button><button class="secondary" data-action="back" data-step="3">Change departure decision</button><button class="secondary" data-action="review">Rebuild the whole design</button><button class="ghost" data-action="copy-brief">Copy design brief</button></div><div id="msg" class="error" aria-live="polite"></div></section>`,5);
+}
+function copyBrief(){
+ const p=playState(),d=designOutput();const lines=[`Arthur · Care Well — ${CFG.gameVersion||'v0.3'}`, ...GAME.decisions.map(x=>`${x.title}: ${option(state.choices[x.id]).name}`),`Strengthened: ${option(state.strengthened).strength}`,'',...p.moments.map(m=>`${m.key.toUpperCase()} — ${m.status}: ${m.title}. ${m.detail} Design insight: ${m.why}`),'',...Object.entries(d).flatMap(([k,v])=>[k.toUpperCase(),...v.map(x=>`- ${x}`),''])];
+ const selected=state.commitment?commitmentOptions().find(x=>x.id===state.commitment.id):null;
+ if(selected)lines.push('ACHC COMMITMENT',selected.title,selected.detail,'Category: '+({enable:'Enable now',coordinate:'Coordinate across services',preserve:'Preserve for the future'}[state.commitment.category]),'Operations: '+selected.operations,'Place: '+selected.place);
+ const value=lines.join('\n');
+ const msg=document.getElementById('msg');
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(value).then(()=>{if(msg)msg.textContent='Design brief copied.'}).catch(()=>{if(msg)msg.textContent='Clipboard permission unavailable. Select the brief text to copy.'});}
+ else if(msg)msg.textContent='Clipboard unavailable in this browser. Select the brief text to copy.';
 }
 function restart(){state=fresh();save();render();}
 function review(){back(1);}
@@ -177,7 +304,15 @@ app.addEventListener('click',e=>{
     case 'choose':choose(btn.dataset.decision,btn.dataset.option);break;
     case 'back':back(Number(btn.dataset.step));break;
     case 'strengthen':applyStrength(btn.dataset.option);break;
+    case 'next-beat':state.screen='pressure';save();render();break;
+    case 'back-beat':state.screen='disruption';save();render();break;
     case 'resolve':resolveGame();break;
+    case 'lens-tab':state.lensTab=btn.dataset.tab==='design'?'design':'operations';save();render();break;
+    case 'go-lens':state.screen='lens';save();render();break;
+    case 'go-commit':state.screen='commit';save();render();break;
+    case 'lens-back':state.screen='pressure';save();render();break;
+    case 'finish':finishCommitment();break;
+    case 'copy-brief':copyBrief();break;
     case 'restart':restart();break;
     case 'review':review();break;
   }
