@@ -1,25 +1,28 @@
-# Arthur · Care Well — v0.8
+# Arthur · Care Well — v0.9: Arthur's Journey Begins
 
-Complete, offline-capable single-player GitHub Pages package. Replace the repository-root files with the contents of this archive, including the `assets/` directory. No build or server required.
+Complete, static, single-player GitHub Pages application, built from v0.8 with a new visual baseline before investment decisions.
 
-## The new game rhythm
+## New opening sequence
 
-**Decision → Impact → Reveal → Next decision.** Each of the three original design commitments now leads to a deliberate, visual consequence screen that explicitly distinguishes:
+1. **Introduce the place.** ACHC as a mixed-service care ecosystem with independent partners. This is a future-state visioning scenario, not a description of an approved building or clinical operating model.
+2. **Meet Arthur.** Fictional 72-year-old patient preparing for a planned outpatient procedure, accompanied by his wife. The game's *assumed* pre-procedure requirements are lab work, imaging and a pre-check consultation; not all outpatient procedures need these tests.
+3. **Walk the baseline.** Four clickable stops: Arrival → Laboratory → Imaging → Pre-check consult. Each has an illustrated setting, a human concern and a coordination question. Clarity, Continuity and Confidence anchor the journey.
+4. **Invest in change.** The original v0.8 decisions, opportunity costs, Decision → Impact → Reveal cadence, opening-day implementation priorities, partner registration, clinical disruption, six design moments and final architectural/operational translation remain intact.
 
-- **What Arthur gains.** All nine investments have a positive value, not an inherently wrong choice.
-- **What becomes demanding.** Operational obligations and resource costs are visible.
-- **What is no longer affordable at opening.** Out-of-budget directions are identified, while acknowledging potential for later phases.
-- **Opening-day value vs future value.** An investment can create physical/design benefit now even if the full service model is phased.
-- **Design moment.** A concise physical-planning implication plus a link to the full interactive six-futures visual comparison with Architecture, Functional Planning and Engineering panels.
+After each of the three investments, the game identifies what improves compared with Arthur's initial journey. All legitimate investments retain benefit and future value even where the full operating model is not ready at opening.
 
-The original resource constraints, three choices, opening-day priority, third-party registration model, two disruption beats, Operations & Design Lens and final commitment are preserved. The complete six-futures gallery, scene imagery and Learn More comparisons remain available.
+## Install
 
-## Deploy and test
+Upload **all files** from this ZIP to the root of your GitHub Pages repository (preserve the `assets/` folder). Commit and hard-refresh. The displayed version should be `care-well-sp-0.9.0`. v0.9 has its own local saved-game key and will not load in-progress v0.8 games.
 
-1. Upload/replace every file, including 18 `assets/*.webp` files and `.nojekyll`.
-2. Commit to the GitHub Pages branch. The `config.js` version should display `care-well-sp-0.8.0`.
-3. Hard-refresh the site. v0.8 uses a separate saved-state key, so older sessions will not be restored.
-4. Smoke-test: Start → Decision 1 → Impact 1 → Decision 2 → Impact 2 → Decision 3 → Impact 3 → Readiness/registration → Disruption → Pressure → Lens → Commitment → Reveal.
-5. Test backtracking from each impact, budget-excluded options, all six Design Moments, and completion after a page refresh.
+## Test journey
 
-Images and design descriptions are hypothetical workshop provocations derived from ACHC visioning material, **not** an approved architectural design, clinical model, construction requirement or implementation plan. Resource costs are game mechanics, not validated project estimates. Do not interpret the consequence labels or capability scores as clinical safety ratings.
+Campus introduction → Meet Arthur → Baseline stops 1–4 → Decision 1 → Impact 1 → Decision 2 → Impact 2 → Decision 3 → Impact 3 → Opening priority + registration → Clinical disruption → Operational pressure → Design & Operations lens → Commitment → Results.
+
+Also test reopening all six design moments, switching architectural/planning/engineering tabs, backtracking investments, varying registration models, and refreshing a partially completed session.
+
+## Assumptions and limits
+
+- Arthur, his wife, clinical scenario, and interactions are fictional. Do not read the baseline as documented current ACHC failures or as a clinical care protocol.
+- The architectural imagery and six-futures alternatives are conceptual visioning provocations, not approved ACHC designs.
+- Resource costs are illustrative gameplay constraints, not budget estimates, engineering specifications or clinical safety scores.
