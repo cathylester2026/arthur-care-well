@@ -1,18 +1,24 @@
-# Arthur · Care Well — v0.5 single-player
+# Arthur · Care Well — v0.6
 
-Deploy all six files in the root of the GitHub Pages repository. No build tools needed. Verify the banner shows `care-well-sp-0.5.0`. Reload without browser cache if necessary.
+Complete, standalone single-player GitHub Pages build. No bundler, database, or external assets required.
 
-## Changes
-- Existing nine design options and Capital/Change/Operations limits retained.
-- Trade-off is shown before every design selection.
-- The original strengthening screen has been replaced by an **opening-day readiness** decision after all three design choices. Only one investment is operational on opening day; the other two represent intended future design directions, not guaranteed live workflows. This is a deliberate simplification of phasing, not a prediction of clinical readiness.
-- Registration choice: **centralized**, **department/setting**, or **federated**; all have real benefits and costs. None assumes an independent provider is owned by Covenant Health.
-- Disruption includes a specialist run by an independent organization. The new partner moment tests confirmation of referral acceptance and the limitations of shared registration.
-- Five consequence moments: arrival, clinical, operations, independent partner, transition. The Design & Operations Lens includes opening-day readiness and cross-organization obligations.
-- Saved-state key is v5; earlier saves are intentionally not imported. Invalid over-budget restored portfolios are rejected.
+## Deploy
 
-## Intended discussion
-This simulation illustrates operating-model trade-offs and future design implications. It is not an approved clinical pathway, formal budget, legal analysis, digital architecture, or staffing plan. Specific partner privacy, consent, registration, clinical and contractual agreements must be assessed by the responsible organizations.
+Extract **all eight files** to the repository root (where `index.html` lives): `index.html`, `app.js`, `styles.css`, `config.js`, `design-moments.js`, `design-ui.js`, `.nojekyll`, and this `README.md`. Commit, then refresh with a cache-clearing reload. Expected display version: `care-well-sp-0.6.0`.
 
-## Testing
-Run `node --check app.js`. The provided game is fully local and may be served by a basic static HTTP server or GitHub Pages.
+## What changed
+
+- Added six optional **Design Moments** corresponding to the presentation's six shifts: Access, Connected Care, Distributed Care, Intelligent Work, Visible Operations, Adaptable Environments.
+- Four particularly developed topics: registration and independent providers, departmental versus shared diagnostics, room adaptability, and shared-capacity authority. Each offers three visual alternatives with explicit benefit, sacrifice, architecture, functional planning, engineering, opening-day and future implications.
+- Added original, responsive concept diagrams; no third-party photo assets or licensed media.
+- Added a visual Design Moment entry point on design-choice cards, the registration discussion, and the Design & Operations/closing screens; a gallery lets the user explore all six at any time.
+- These panels are optional and **do not alter gameplay scoring, budgets or outcomes**. The original v0.5 single-player stages remain: 3 decisions, readiness/registration, 2 disruption beats, lens, commitment, outcome.
+- New local storage namespace for v0.6 avoids restoring incompatible older sessions.
+
+## Visioning boundary
+
+Design Moments are **illustrative hypotheses** for stakeholder discussion, not approved room criteria, clinical workflows, procurement commitments or technology specifications. Confirm engineering capacity, privacy, regulatory and clinical governance requirements before adoption.
+
+## Validation
+
+Use a modern browser. Smoke-test: begin → select three affordable investments → select priority and registration → both disruption screens → operations/design lens → commitment → final result. Revisit choices and try Design Moments without losing state. `node --check app.js`, `node --check design-ui.js` and `node --check design-moments.js` should all pass.
