@@ -59,3 +59,37 @@ button:disabled{cursor:not-allowed;opacity:.56;transform:none}
 .future-strip .design-scene{height:105px;aspect-ratio:auto}
 .design-scene.hero{height:320px;aspect-ratio:auto}
 @media(max-width:700px){.moment-option .design-scene{height:92px}.design-scene.hero{height:230px}.future-strip .design-scene{height:82px}}
+/* v0.8 experiential investment reveal */
+.investment-reveal{max-width:1120px;margin:auto}
+.impact-hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(220px,.6fr);align-items:stretch;gap:16px;margin:18px 0}
+.impact-hero .design-scene.hero{height:290px;border-radius:17px;overflow:hidden}
+.impact-label{background:#133b35;color:#e8f7ed;border-radius:17px;padding:25px;display:flex;flex-direction:column;justify-content:center}
+.impact-label strong{color:#9cdebf;text-transform:uppercase;font-size:.78rem;letter-spacing:.07em}.impact-label p{font-size:1.27rem;line-height:1.45;margin:12px 0 0;color:#fff}
+.impact-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.impact-panel{border:1px solid #cfdcd4;border-radius:17px;padding:20px;background:#fff}
+.impact-panel.positive{background:#e7f5ed;border-color:#afd8c4}.impact-panel.burden{background:#fff5e9;border-color:#edd1ae}
+.impact-panel h3{font-size:1.1rem;margin:8px 0 6px}.impact-panel p{margin:0;line-height:1.56}
+.impact-kicker{text-transform:uppercase;letter-spacing:.07em;font-weight:850;font-size:.75rem;color:#246a59}
+.impact-panel.burden .impact-kicker{color:#995319}
+.investment-budget{background:#f2f5f1;border:1px solid #d6e3d8;padding:18px 20px;border-radius:14px;margin:14px 0;display:flex;flex-direction:column;gap:7px}
+.investment-budget>span{color:#215d4c;font-size:.94rem}.impact-opportunity{font-weight:650;margin:8px 0 0;line-height:1.5}
+.foregone{display:inline-flex;border-radius:99px;background:#f7dfd2;border:1px solid #dfbbab;padding:5px 10px;margin:3px 4px 3px 0;font-size:.82rem;color:#78391e;font-weight:700}
+.impact-future{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:15px 0}
+.impact-future>div{border-left:4px solid #368d7f;background:#edf7f1;padding:15px 18px;border-radius:0 12px 12px 0}
+.impact-future>div+div{border-color:#778cb3;background:#eff3fb}.impact-future p{margin:7px 0 0;line-height:1.48}
+.design-takeaway{border:1px solid #cbdcd6;border-radius:15px;padding:18px 20px;background:#fff}.design-takeaway p{margin:6px 0 12px}
+.investment-recap{border-top:1px solid #cfdad1;margin:24px 0;padding-top:15px}
+.recap-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.recap-grid article{border:1px solid #d7e4dc;border-radius:13px;padding:15px;background:#f4f9f6}.recap-grid strong,.recap-grid small{display:block}.recap-grid small{color:#386b5c;margin:7px 0}.recap-grid p{font-size:.87rem;line-height:1.45}
+@media(max-width:780px){.impact-hero,.impact-columns,.impact-future,.recap-grid{grid-template-columns:1fr}.impact-hero .design-scene.hero{height:230px}.impact-label p{font-size:1.05rem}}
+/* v0.8 visual-first selection cards */
+.card .design-scene.card{display:block;height:155px;aspect-ratio:auto;margin:0 0 15px;overflow:hidden;border-radius:13px}
+.card .design-scene.card img{width:100%;height:100%;object-fit:cover}
+.card-snapshot{border-radius:10px;padding:10px 12px;margin:10px 0;font-size:.86rem;line-height:1.42;display:flex;flex-direction:column;gap:3px}
+.card-snapshot.positive{background:#eaf5ed;color:#1b5544}.card-snapshot.drawback{background:#fff2e5;color:#83502f}
+.card-snapshot b{font-size:.72rem;letter-spacing:.03em;text-transform:uppercase}
+.choice-details{margin:10px 0;color:#2b5344;border:1px solid #d9e5db;padding:9px;border-radius:10px}
+.choice-details summary{font-weight:700;cursor:pointer;font-size:.85rem}.choice-details ul{margin:6px 0 9px;padding-left:22px}
+/* The scene's 'hero' variant must not inherit the intro hero's oversized padding. */
+.impact-hero .design-scene.hero{padding:0;background:#dbe9e0;box-shadow:none;display:block}
+.impact-hero .design-scene.hero::after{display:none}
+.impact-hero .design-scene.hero img{height:100%;width:100%;object-fit:cover}

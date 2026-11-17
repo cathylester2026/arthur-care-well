@@ -1,31 +1,25 @@
-# Arthur · Care Well — v0.7
+# Arthur · Care Well — v0.8
 
-Complete, standalone single-player GitHub Pages build. No bundler, database, or external assets required.
+Complete, offline-capable single-player GitHub Pages package. Replace the repository-root files with the contents of this archive, including the `assets/` directory. No build or server required.
 
-## Deploy
+## The new game rhythm
 
-Extract **all eight files** to the repository root (where `index.html` lives): `index.html`, `app.js`, `styles.css`, `config.js`, `design-moments.js`, `design-ui.js`, `.nojekyll`, and this `README.md`. Commit, then refresh with a cache-clearing reload. Expected display version: `care-well-sp-0.7.0`.
+**Decision → Impact → Reveal → Next decision.** Each of the three original design commitments now leads to a deliberate, visual consequence screen that explicitly distinguishes:
 
-## What changed
+- **What Arthur gains.** All nine investments have a positive value, not an inherently wrong choice.
+- **What becomes demanding.** Operational obligations and resource costs are visible.
+- **What is no longer affordable at opening.** Out-of-budget directions are identified, while acknowledging potential for later phases.
+- **Opening-day value vs future value.** An investment can create physical/design benefit now even if the full service model is phased.
+- **Design moment.** A concise physical-planning implication plus a link to the full interactive six-futures visual comparison with Architecture, Functional Planning and Engineering panels.
 
-- Added six optional **Design Moments** corresponding to the presentation's six shifts: Access, Connected Care, Distributed Care, Intelligent Work, Visible Operations, Adaptable Environments.
-- Four particularly developed topics: registration and independent providers, departmental versus shared diagnostics, room adaptability, and shared-capacity authority. Each offers three visual alternatives with explicit benefit, sacrifice, architecture, functional planning, engineering, opening-day and future implications.
-- Added original, responsive concept diagrams; no third-party photo assets or licensed media.
-- Added a visual Design Moment entry point on design-choice cards, the registration discussion, and the Design & Operations/closing screens; a gallery lets the user explore all six at any time.
-- These panels are optional and **do not alter gameplay scoring, budgets or outcomes**. The original v0.5 single-player stages remain: 3 decisions, readiness/registration, 2 disruption beats, lens, commitment, outcome.
-- New local storage namespace for v0.7 avoids restoring incompatible older sessions.
+The original resource constraints, three choices, opening-day priority, third-party registration model, two disruption beats, Operations & Design Lens and final commitment are preserved. The complete six-futures gallery, scene imagery and Learn More comparisons remain available.
 
-## Visioning boundary
+## Deploy and test
 
-Design Moments are **illustrative hypotheses** for stakeholder discussion, not approved room criteria, clinical workflows, procurement commitments or technology specifications. Confirm engineering capacity, privacy, regulatory and clinical governance requirements before adoption.
+1. Upload/replace every file, including 18 `assets/*.webp` files and `.nojekyll`.
+2. Commit to the GitHub Pages branch. The `config.js` version should display `care-well-sp-0.8.0`.
+3. Hard-refresh the site. v0.8 uses a separate saved-state key, so older sessions will not be restored.
+4. Smoke-test: Start → Decision 1 → Impact 1 → Decision 2 → Impact 2 → Decision 3 → Impact 3 → Readiness/registration → Disruption → Pressure → Lens → Commitment → Reveal.
+5. Test backtracking from each impact, budget-excluded options, all six Design Moments, and completion after a page refresh.
 
-## Validation
-
-Use a modern browser. Smoke-test: begin → select three affordable investments → select priority and registration → both disruption screens → operations/design lens → commitment → final result. Revisit choices and try Design Moments without losing state. `node --check app.js`, `node --check design-ui.js` and `node --check design-moments.js` should all pass.
-
-
-## New in v0.7 — illustrative future-state imagery
-
-The six design moments now feature immersive architectural scene cards, a large selected-state visual, and three linked design callouts for Architecture, Functional Planning and Engineering. Scenes are derived from the user-supplied ACHC digital-visioning presentation, cropped into local self-contained WebP assets in `assets/`. These are *illustrative provocations*, not project-approved rooms, layouts, specifications, or operational arrangements. The existing nine gameplay options, choices, budget logic, phasing, outcomes and single-player flow are unchanged.
-
-All `assets/*.webp` files must be included when deploying to GitHub Pages. No third-party image calls are needed.
+Images and design descriptions are hypothetical workshop provocations derived from ACHC visioning material, **not** an approved architectural design, clinical model, construction requirement or implementation plan. Resource costs are game mechanics, not validated project estimates. Do not interpret the consequence labels or capability scores as clinical safety ratings.
