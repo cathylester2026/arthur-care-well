@@ -18,7 +18,7 @@ const GAME={
  {id:'wellness',letter:'C',name:'Connected Wellness',tag:'Use the procedure as the beginning of Arthur’s next care plan.',creates:['Confirmed follow-up','Connected medication and recovery','Continued support'],requires:['Wellness navigation','Virtual care','Named follow-up ownership'],risk:'A referral is not continuity unless capacity and ownership exist.',cost:[2,3,3],impact:[3,3,2,2,2,3],strength:'Closed-Loop Wellness',boost:[0,0,0,1,1,0]}]}],
  synergies:[['digital','network',1,1],['digital','core',0,1],['legible','core',2,1],['human','network',3,1],['human','comes',0,1],['core','adaptive',4,1],['comes','adaptive',2,1],['network','wellness',5,1],['core','wellness',1,1],['human','wellness',5,1]]
 };
-const STORAGE_KEY = 'arthur-care-well-v13';
+const STORAGE_KEY = 'arthur-care-well-v14';
 const OLD_KEY = 'arthur-care-well';
 const SCREEN_ORDER = ['intro','campus','arthur','baseline','howto','launch','d1','d2','d3','impact1','impact2','impact3','reveal1','reveal2','reveal3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
 const app = document.getElementById('app');
@@ -213,7 +213,7 @@ const INVESTMENT_STORIES = {
  wellness:{moment:'adapt',image:2,need:'Arthur wants someone to own the next step after he leaves.',gain:'Medication, follow-up and ongoing care are treated as part of the same journey.',cost:'Partner referral acceptance, clinical accountability and information-sharing agreements take effort.',opening:'A named follow-up owner can improve continuity even with manual partner workflows.',future:'Virtual follow-up and richer closed-loop partner integration can mature later.',design:'Protect private education space, connected consult capacity and resilient partner interfaces.'}
 };
 
-const INVESTMENT_VISUALS={digital:'digital-story.webp',network:'department-network.webp',core:'core-story.webp',wellness:'wellness-story.webp'};
+const INVESTMENT_VISUALS={digital:'digital-story.webp',legible:'legible-wayfinding.webp',human:'human-guide.webp',network:'department-network.webp',core:'core-story.webp',wellness:'wellness-story.webp'};
 function investmentScene(oid,variant='card'){
   const photo=INVESTMENT_VISUALS[oid];
   if(photo)return `<span class="design-scene ${variant} investment-art ${oid}-art"><img src="assets/${photo}" alt="Visual concept for ${escapeHTML(option(oid).name)}" loading="lazy"></span>`;
@@ -237,6 +237,19 @@ function strategicAha(){
  return {headline:insight[prime.id],deferred};
 }
 
+// These are essential operating/design consequences, not optional Learn More content.
+// Registration authority is intentionally a later player decision, not silently decided here.
+const ESSENTIAL_IMPLICATIONS={
+ digital:'A digital itinerary must reflect live registration, lab and imaging status. Decide who owns registration and exceptions at opening.',
+ legible:'Entries, sightlines and accessible routes must remain clear even when a service or appointment changes.',
+ human:'Welcome staff need live appointment visibility and permission to resolve cross-service exceptions—not just directions.',
+ network:'Separate departments need named handoff owners, shared visit status and reliable links between appointments.',
+ core:'The diagnostic layout can be shared, but scheduling authority and responsibility for reassessment must be agreed.',
+ comes:'Flexible rooms need mobile staff, equipment storage, charging, transport and turnover coordination.',
+ fast:'Pharmacy readiness, pickup, education and clinical clearance must be confirmed by an accountable team.',
+ adaptive:'Flexible recovery rooms require matching staffing, observation capability and access to clinical escalation.',
+ wellness:'A named follow-up owner must confirm referral acceptance and information sharing with independent partners.'
+};
 function remainingText(){const t=totals(),b=GAME.budgets;return ['capital','change','operations'].map(k=>`${k[0].toUpperCase()+k.slice(1)} ${b[k]-t[k]} left`).join(' · ');}
 function investmentImpact(n){
  const d=GAME.decisions[n-1],id=state.choices[d.id],o=option(id);
@@ -246,7 +259,32 @@ function investmentImpact(n){
  const blocked=nextD?nextD.options.filter(x=>!completionExists({...state.choices,[nextD.id]:x.id})):[];
  const possible=nextD?nextD.options.filter(x=>completionExists({...state.choices,[nextD.id]:x.id})):[];
  const future = n===3?'You now choose which of your three investments becomes fully operational at opening. The others still create future value.':blocked.length?`${blocked.map(x=>x.name).join(' and ')} ${blocked.length===1?'is':'are'} out of reach within this opening-day resource envelope. Those futures can still be planned for later.`:'All next-stage choices remain possible, but every commitment uses finite resources.';
- app.innerHTML=shell(`<section class="panel investment-reveal"><div class="stage">Decision ${n} · Impact · 1 of 2</div><h2>You've invested in ${escapeHTML(o.name)}.</h2><p class="lede">This helps Arthur. The question is what it requires—and what you can still deliver.</p><div class="impact-hero">${investmentScene(id,'hero')}<div class="impact-label"><strong>What improves for Arthur</strong><p>${escapeHTML(st.need)}</p></div></div><div class="impact-columns"><article class="impact-panel positive"><div class="impact-kicker">✓ Compared with Arthur’s baseline</div><h3>What this investment makes possible</h3><p>${escapeHTML(st.gain)}</p></article><article class="impact-panel burden"><div class="impact-kicker">↔ What the investment asks of the campus</div><h3>What becomes more demanding</h3><p>${escapeHTML(st.cost)}</p></article></div><div class="investment-budget"><strong>Committed: Capital ${o.cost[0]} · Change ${o.cost[1]} · Operations ${o.cost[2]}</strong><span>${escapeHTML(remainingText())}</span><p class="impact-opportunity">${escapeHTML(future)}</p>${blocked.length?`<div class="option-strips"><b>Not affordable at opening:</b> ${blocked.map(x=>`<span class="foregone">${escapeHTML(x.name)}</span>`).join('')}</div>`:''}${possible.length?`<p class="small">Still feasible next: ${possible.map(x=>escapeHTML(x.name)).join(' · ')}</p>`:''}</div><div class="impact-future"><div><span class="impact-kicker">OPENING VALUE</span><p>${escapeHTML(st.opening)}</p></div><div><span class="impact-kicker">FUTURE VALUE</span><p>${escapeHTML(st.future)}</p></div></div><div class="design-takeaway"><strong>Design moment: protect the investment</strong><p>${escapeHTML(st.design)}</p>${momentLinkForChoice(d.id,id)}</div><div class="aha-internal"><span class="aha-label">THE TRADE-OFF</span><strong>${blocked.length?`Because you invested in ${escapeHTML(o.name)}, ${escapeHTML(blocked[0].name)} cannot also be funded at opening within this resource plan.`:`Your investment creates value; the remaining budget still constrains what can be fully operational at opening.`}</strong><small>Deferred at opening does not mean impossible in a later phase.</small></div><div class="actions"><button class="primary" data-action="continue-impact" data-step="${n}">See what Arthur experiences →</button><button class="secondary" data-action="back" data-step="${n}">Reconsider this investment</button></div></section>`,n);
+ const tradeoff = blocked.length
+   ? `Because you selected ${o.name}, ${blocked[0].name} cannot also fit the current opening-day resource plan. It can remain a future-phase option.`
+   : 'Your investment creates value. The resources left will limit what else can be fully operational at opening.';
+ app.innerHTML=shell(`<section class="panel investment-reveal impact-v14">
+   <div class="stage">Decision ${n} · Impact · 1 of 2</div>
+   <h2>You invested in ${escapeHTML(o.name)}.</h2>
+   <p class="lede compact-lede">One benefit for Arthur. One obligation for the campus.</p>
+   <div class="impact-v14-main">
+      ${investmentScene(id,'hero')}
+      <div class="impact-v14-summary">
+        <div><span class="impact-kicker">✓ Arthur gains</span><p>${escapeHTML(st.gain)}</p></div>
+        <div><span class="impact-kicker">↔ ACHC takes on</span><p>${escapeHTML(st.cost)}</p></div>
+      </div>
+   </div>
+   <div class="impact-v14-insight"><span class="impact-kicker">KEY DESIGN + OPERATIONS DECISION</span><strong>${escapeHTML(ESSENTIAL_IMPLICATIONS[id])}</strong></div>
+   <div class="impact-v14-trade"><span class="impact-kicker">YOUR TRADE-OFF</span><p>${escapeHTML(tradeoff)}</p></div>
+   <details class="impact-v14-more"><summary>Resources, phasing and deeper design impacts</summary>
+     <div class="impact-v14-extra"><p><b>Invested:</b> Capital ${o.cost[0]} · Change ${o.cost[1]} · Operations ${o.cost[2]}</p>
+     <p><b>Remaining:</b> ${escapeHTML(remainingText())}</p>
+     <p><b>Opening possibility:</b> ${escapeHTML(st.opening)}</p>
+     <p><b>Future value:</b> ${escapeHTML(st.future)}</p>
+     <p><b>Design guardrail:</b> ${escapeHTML(st.design)}</p>
+     ${momentLinkForChoice(d.id,id)}</div>
+   </details>
+   <div class="actions"><button class="primary" data-action="continue-impact" data-step="${n}">See what Arthur experiences →</button><button class="secondary" data-action="back" data-step="${n}">Reconsider investment</button></div>
+ </section>`,n);
 }
 
 // One immediate, human-scale reveal for each investment. These scenes show
