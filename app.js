@@ -18,12 +18,12 @@ const GAME={
  {id:'wellness',letter:'C',name:'Connected Wellness',tag:'Use the procedure as the beginning of Arthur’s next care plan.',creates:['Confirmed follow-up','Connected medication and recovery','Continued support'],requires:['Wellness navigation','Virtual care','Named follow-up ownership'],risk:'A referral is not continuity unless capacity and ownership exist.',cost:[2,3,3],impact:[3,3,2,2,2,3],strength:'Closed-Loop Wellness',boost:[0,0,0,1,1,0]}]}],
  synergies:[['digital','network',1,1],['digital','core',0,1],['legible','core',2,1],['human','network',3,1],['human','comes',0,1],['core','adaptive',4,1],['comes','adaptive',2,1],['network','wellness',5,1],['core','wellness',1,1],['human','wellness',5,1]]
 };
-const STORAGE_KEY = 'arthur-care-well-v12';
+const STORAGE_KEY = 'arthur-care-well-v13';
 const OLD_KEY = 'arthur-care-well';
-const SCREEN_ORDER = ['intro','campus','arthur','baseline','d1','d2','d3','impact1','impact2','impact3','reveal1','reveal2','reveal3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
+const SCREEN_ORDER = ['intro','campus','arthur','baseline','howto','launch','d1','d2','d3','impact1','impact2','impact3','reveal1','reveal2','reveal3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
 const app = document.getElementById('app');
 const newId = () => (window.crypto && typeof crypto.randomUUID==='function') ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const fresh = () => ({screen:'intro', baselineStep:0, choices:{}, strengthened:null, readiness:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null, journeyStep:0});
+const fresh = () => ({screen:'intro', helpReturn:null, baselineStep:0, choices:{}, strengthened:null, readiness:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null, journeyStep:0});
 function load() {
  try {
   const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return null;
@@ -37,6 +37,7 @@ function load() {
   if(next.readiness)next.strengthened=next.choices[next.readiness.priority]||null;
   if(SCREEN_ORDER.includes(saved.screen))next.screen=saved.screen;
   if(typeof saved.startedAt==='string')next.startedAt=saved.startedAt;
+  if(typeof saved.helpReturn==='string' && SCREEN_ORDER.includes(saved.helpReturn))next.helpReturn=saved.helpReturn;
   if(Number.isInteger(saved.baselineStep))next.baselineStep=Math.max(0,Math.min(3,saved.baselineStep));
   if(typeof saved.sessionId==='string')next.sessionId=saved.sessionId;
   if(Array.isArray(saved.events))next.events=saved.events.slice(-100);
@@ -44,7 +45,7 @@ function load() {
   if(Number.isInteger(saved.journeyStep))next.journeyStep=Math.max(0,Math.min(4,saved.journeyStep));
   if(saved.commitment && ['arrival','care','leave'].includes(saved.commitment.id) && ['enable','coordinate','preserve'].includes(saved.commitment.category))next.commitment={id:saved.commitment.id,category:saved.commitment.category};
   const progress=ids(next.choices).length;
-  if(progress===0 && !['intro','campus','arthur','baseline','d1'].includes(next.screen))next.screen='d1';
+  if(progress===0 && !['intro','campus','arthur','baseline','howto','launch','d1'].includes(next.screen))next.screen='d1';
   else if(progress===1 && !['intro','d1','impact1','reveal1','d2'].includes(next.screen))next.screen='impact1';
   else if(progress===2 && !['intro','d1','impact1','reveal1','d2','impact2','reveal2','d3'].includes(next.screen))next.screen='impact2';
   else if(progress===3 && ['disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen) && !next.readiness)next.screen='readiness';
@@ -97,12 +98,28 @@ function scores(){
   return norm;
 }
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function shell(inner,step=0){return `<div class="shell"><div class="topbar"><div class="brand">Arthur <span>·</span> Care Well</div><div class="top-controls"><button class="story-return" data-action="story-home" aria-label="Return to story introduction">Meet ACHC & Arthur</button><div class="version">Single player · ${escapeHTML(CFG.gameVersion||'prototype')}</div></div></div>${step?`<div class="progress" aria-label="Game progress, step ${step} of 5">${[1,2,3,4,5].map(x=>`<i class="${x<=step?'on':''}"></i>`).join('')}</div>`:''}${inner}<div class="footerline">A wellness campus is not a collection of services. It is a promise that the experience can reorganize around Arthur.</div></div>`;}
+const CHAPTERS=[
+ {name:'Meet ACHC & Arthur',short:'Meet',icon:'⌂',screens:['intro','campus','arthur']},
+ {name:'Arthur’s baseline',short:'Baseline',icon:'①',screens:['baseline']},
+ {name:'Learn to play',short:'Learn',icon:'?',screens:['howto','launch']},
+ {name:'Investments',short:'Invest',icon:'◆',screens:['d1','impact1','reveal1','d2','impact2','reveal2','d3','impact3','reveal3']},
+ {name:'Opening-day choices',short:'Opening',icon:'◷',screens:['readiness']},
+ {name:'Arthur’s changed day',short:'Change',icon:'↝',screens:['disruption','pressure']},
+ {name:'Design & results',short:'Design',icon:'✓',screens:['lens','commit','result','journeyResult']}
+];
+function chapterIndex(){return Math.max(0,CHAPTERS.findIndex(c=>c.screens.includes(state.screen)));}
+function journeyMap(){
+ const active=chapterIndex();
+ return `<nav class="chapter-map" aria-label="Your journey through the game">${CHAPTERS.map((c,i)=>`<div class="chapter-step ${i===active?'active':i<active?'done':''}" ${i===active?'aria-current="step"':''}><span class="chapter-bubble">${i<active?'✓':c.icon}</span><span class="chapter-name">${escapeHTML(c.short)}</span></div>`).join('')}</nav>`;
+}
+function shell(inner,step=0){return `<div class="shell"><div class="topbar"><div class="brand">Arthur <span>·</span> Care Well</div><div class="top-controls"><button class="story-return" data-action="story-home" aria-label="Return to story introduction">Meet ACHC & Arthur</button><button class="story-return" data-action="open-help">How to Play</button><div class="version">Single player · ${escapeHTML(CFG.gameVersion||'prototype')}</div></div></div>${journeyMap()}${inner}<div class="footerline">A health campus is more than a collection of services. We are designing how the experience connects around Arthur.</div></div>`;}
 function render(){
   if(state.screen==='intro')return intro();
   if(state.screen==='campus')return campusScreen();
   if(state.screen==='arthur')return arthurScreen();
   if(state.screen==='baseline')return baselineScreen();
+  if(state.screen==='howto')return howToScreen();
+  if(state.screen==='launch')return launchScreen();
   if(state.screen==='readiness')return readinessScreen();
   if(/^impact[1-3]$/.test(state.screen))return investmentImpact(Number(state.screen.slice(6)));
   if(/^reveal[1-3]$/.test(state.screen))return investmentReveal(Number(state.screen.slice(6))); 
@@ -119,7 +136,7 @@ function render(){
 // This is an illustrative workshop case, not a prescribed clinical pathway.
 const BASELINE_STOPS = [
  {name:'Arrival',short:'Find the first desk',icon:'⌖',image:'access-0.webp',question:'Is this one check-in or the first of several?',feel:'I just want to know I am in the right place.',issue:'A clear first stop does not guarantee that every service has the same registration requirements.',value:'Clarity'},
- {name:'Laboratory',short:'Complete lab work',icon:'◉',image:'connected-0.webp',question:'Does the lab know Arthur is expected today?',feel:'I have followed the instructions. I hope I have everything I need.',issue:'A lab may be ready for the test while the wider visit still depends on separate appointments and status updates.',value:'Continuity'},
+ {name:'Laboratory',short:'Complete lab work',icon:'◉',image:'lab-journey.webp',question:'Does the lab know Arthur is expected today?',feel:'I have followed the instructions. I hope I have everything I need.',issue:'A lab may be ready for the test while the wider visit still depends on separate appointments and status updates.',value:'Continuity'},
  {name:'Imaging',short:'Complete imaging',icon:'▣',image:'connected-1.webp',question:'Can the next service see when imaging is complete?',feel:'I am trying to keep everything on schedule.',issue:'Imaging has specialized capacity and readiness requirements; co-location does not itself connect the schedule.',value:'Continuity'},
  {name:'Pre-check consult',short:'Confirm procedure readiness',icon:'✓',image:'distributed-0.webp',question:'Is the consultation team ready with the information it needs?',feel:'Will everything be ready so my procedure can go ahead?',issue:'The plan depends on the right results, clinical review and someone accountable for communicating what comes next.',value:'Confidence'}
 ];
@@ -138,12 +155,31 @@ function arthurScreen(){
 function baselineScreen(){
  const i=state.baselineStep||0, s=BASELINE_STOPS[i];
  const nodes=BASELINE_STOPS.map((x,n)=>`<button class="journey-node ${n===i?'active':''} ${n<i?'visited':''}" data-action="baseline-jump" data-step="${n}" aria-pressed="${n===i}"><span class="journey-number">${n+1}</span><strong>${escapeHTML(x.name)}</strong><small>${escapeHTML(x.short)}</small></button>`).join('');
- app.innerHTML=shell(`<section class="panel story-panel"><div class="story-step">THE BASELINE · 03 / 03</div><h2>One visit. Four stops. One big question.</h2><p class="lede">Before any new investments, walk the everyday journey Arthur needs to complete. Each service can do its job well, while connections between services remain uncertain.</p><div class="journey-track">${nodes}</div><div class="baseline-stage"><div class="baseline-scene"><img src="assets/${s.image}" alt="Illustrative ACHC clinical environment for ${escapeHTML(s.name)}"><div class="baseline-scene-label">STOP ${i+1} OF 4 · ${escapeHTML(s.name)}</div></div><div class="baseline-text"><div class="baseline-kicker">WHAT ARTHUR NEEDS · ${escapeHTML(s.value)}</div><h3>${escapeHTML(s.question)}</h3><blockquote>“${escapeHTML(s.feel)}”</blockquote><div class="baseline-dependency"><strong>What may require coordination</strong><p>${escapeHTML(s.issue)}</p></div></div></div><div class="baseline-values"><span>⌖ Clarity</span><span>↔ Continuity</span><span>♡ Confidence</span></div><div class="actions">${i<3?`<button class="primary" data-action="baseline-next">Next stop →</button>`:`<button class="primary" data-action="baseline-finish">Invest in a better journey →</button>`}<button class="secondary" data-action="baseline-back">${i>0?'Previous stop':'Back to Arthur'}</button></div><p class="small">Illustrative baseline, not evidence of existing ACHC service failures. No delay or unsafe care is presumed.</p></section>`);
+ app.innerHTML=shell(`<section class="panel story-panel"><div class="story-step">THE BASELINE · 03 / 03</div><h2>One visit. Four stops. One big question.</h2><p class="lede">Before any new investments, walk the everyday journey Arthur needs to complete. Each service can do its job well, while connections between services remain uncertain.</p><div class="journey-track">${nodes}</div><div class="baseline-stage"><div class="baseline-scene"><img src="assets/${s.image}" alt="Illustrative ACHC clinical environment for ${escapeHTML(s.name)}"><div class="baseline-scene-label">STOP ${i+1} OF 4 · ${escapeHTML(s.name)}</div></div><div class="baseline-text"><div class="baseline-kicker">WHAT ARTHUR NEEDS · ${escapeHTML(s.value)}</div><h3>${escapeHTML(s.question)}</h3><blockquote>“${escapeHTML(s.feel)}”</blockquote><div class="baseline-dependency"><strong>What may require coordination</strong><p>${escapeHTML(s.issue)}</p></div></div></div><div class="baseline-values"><span>⌖ Clarity</span><span>↔ Continuity</span><span>♡ Confidence</span></div><div class="actions">${i<3?`<button class="primary" data-action="baseline-next">Next stop →</button>`:`<button class="primary" data-action="baseline-finish">See how we can improve Arthur’s journey →</button>`}<button class="secondary" data-action="baseline-back">${i>0?'Previous stop':'Back to Arthur'}</button></div><p class="small">Illustrative baseline, not evidence of existing ACHC service failures. No delay or unsafe care is presumed.</p></section>`);
 }
 function goOpening(dest){if(!['campus','arthur','baseline'].includes(dest))return;state.screen=dest;if(dest==='baseline')state.baselineStep=0;save();render();}
 function baselineNext(){if(state.baselineStep<3)state.baselineStep++;save();render();}
 function baselineBack(){if(state.baselineStep>0){state.baselineStep--;save();render();}else goOpening('arthur');}
-function baselineFinish(){if(state.baselineStep!==3)return;state.screen='d1';event('baseline_completed');render();}
+function baselineFinish(){if(state.baselineStep!==3)return;state.screen='howto';state.helpReturn=null;event('baseline_completed');render();}
+
+function howToScreen(){
+ const returning=!!state.helpReturn;
+ const steps=[
+  ['01','Meet Arthur','You’ve seen his planned visit: registration, lab work, imaging and pre-check.'],
+  ['02','Invest in the future','Make three choices. Each decision uses Capital, Change and Operations resources.'],
+  ['03','See the impact & reveal','First see what your investment enables and costs. Then see what Arthur experiences.'],
+  ['04','Choose opening-day priorities','Decide what can actually be operational at opening. Other investments retain future value.'],
+  ['05','Respond to a change','Arthur’s plan changes. Discover which connections work and which remain fragile.'],
+  ['06','Translate into design','Explore architecture, functional planning and engineering implications.']
+ ];
+ app.innerHTML=shell(`<section class="panel onboarding"><div class="stage">YOUR GAME GUIDE · HOW TO PLAY</div><h2>Here’s how to shape Arthur’s future.</h2><p class="lede">Your investments will help Arthur. They will also commit resources, create obligations and change what else ACHC can deliver at opening.</p><div class="onboarding-grid"><div class="guide-card"><h3>The journey ahead</h3><div class="how-steps">${steps.map(([n,t,d])=>`<div class="how-step"><span class="how-count">${n}</span><div><strong>${t}</strong><p>${d}</p></div></div>`).join('')}</div></div><div class="guide-card"><h3>How to read an investment card</h3><div class="guide-image">${investmentScene('digital','card')}</div><div class="guide-key"><div><span class="guide-token gain">✓ Helps Arthur</span><p>What this investment makes easier for his journey.</p></div><div><span class="guide-token cost">↔ Demands more</span><p>The operational and design obligations it creates.</p></div><div><span class="guide-token resource">Capital · Change · Operations</span><p>The limited resources available for all three investments.</p></div><div><span class="guide-token more">Learn More</span><p>Optional images and architecture, planning and engineering impacts.</p></div></div></div></div><div class="guide-bottom"><strong>Your goal</strong><p>Make thoughtful investments that help Arthur now, while keeping ACHC ready for future care. No investment is simply “bad”—but you cannot do everything at once.</p></div><div class="actions"><button class="primary" data-action="help-next">${returning?'Return to my journey':'See the challenge →'}</button><button class="secondary" data-action="next-opening" data-dest="baseline">Back to Arthur’s baseline</button></div></section>`);
+}
+function launchScreen(){
+ app.innerHTML=shell(`<section class="panel launch-game"><div class="launch-grid"><div class="launch-image">${investmentScene('digital','hero')}</div><div class="launch-copy"><div class="stage">YOUR NEXT CHAPTER · THE INVESTMENTS</div><h2>Let’s see how we can make Arthur’s journey successful.</h2><p>You’ve walked his baseline. Now help ACHC make the experience clearer, more connected and more reliable—while making smart choices about what can be ready at opening.</p><div class="launch-values"><span>✓ Improve Arthur’s experience</span><span>↔ Connect services</span><span>◷ Preserve future options</span></div><div class="actions"><button class="primary" data-action="launch-investments">Explore your first investment →</button><button class="secondary" data-action="launch-back">Back to How to Play</button></div></div></div></section>`);
+}
+function openHelp(){if(state.screen!=='howto')state.helpReturn=state.screen;state.screen='howto';save();render();}
+function helpNext(){const returning=state.helpReturn;if(returning && SCREEN_ORDER.includes(returning)){state.screen=returning;state.helpReturn=null;}else state.screen='launch';save();render();}
+function launchInvestments(){state.screen='d1';state.helpReturn=null;save();render();}
 function resources(){const t=totals(),b=GAME.budgets;return `<div class="resourcebar" aria-label="Resource use">${[['capital','Capital'],['change','Change'],['operations','Operations']].map(([k,l])=>`<span class="resource ${t[k]>b[k]?'over':''}">${l}: ${t[k]} / ${b[k]}</span>`).join('')}</div>`;}
 function decision(n){
   const d=GAME.decisions[n-1];
@@ -177,7 +213,7 @@ const INVESTMENT_STORIES = {
  wellness:{moment:'adapt',image:2,need:'Arthur wants someone to own the next step after he leaves.',gain:'Medication, follow-up and ongoing care are treated as part of the same journey.',cost:'Partner referral acceptance, clinical accountability and information-sharing agreements take effort.',opening:'A named follow-up owner can improve continuity even with manual partner workflows.',future:'Virtual follow-up and richer closed-loop partner integration can mature later.',design:'Protect private education space, connected consult capacity and resilient partner interfaces.'}
 };
 
-const INVESTMENT_VISUALS={digital:'digital-story.webp',core:'core-story.webp',wellness:'wellness-story.webp'};
+const INVESTMENT_VISUALS={digital:'digital-story.webp',network:'department-network.webp',core:'core-story.webp',wellness:'wellness-story.webp'};
 function investmentScene(oid,variant='card'){
   const photo=INVESTMENT_VISUALS[oid];
   if(photo)return `<span class="design-scene ${variant} investment-art ${oid}-art"><img src="assets/${photo}" alt="Visual concept for ${escapeHTML(option(oid).name)}" loading="lazy"></span>`;
@@ -445,6 +481,10 @@ app.addEventListener('click',e=>{
     case 'begin':begin();break;
     case 'resume':resume();break;
     case 'story-home':storyHome();break;
+    case 'open-help':openHelp();break;
+    case 'help-next':helpNext();break;
+    case 'launch-investments':launchInvestments();break;
+    case 'launch-back':state.screen='howto';state.helpReturn=null;save();render();break;
     case 'next-opening':goOpening(btn.dataset.dest);break;
     case 'baseline-next':baselineNext();break;
     case 'baseline-back':baselineBack();break;
