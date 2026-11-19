@@ -18,9 +18,9 @@ const GAME={
  {id:'wellness',letter:'C',name:'Connected Wellness',tag:'Use the procedure as the beginning of Arthur’s next care plan.',creates:['Confirmed follow-up','Connected medication and recovery','Continued support'],requires:['Wellness navigation','Virtual care','Named follow-up ownership'],risk:'A referral is not continuity unless capacity and ownership exist.',cost:[2,3,3],impact:[3,3,2,2,2,3],strength:'Closed-Loop Wellness',boost:[0,0,0,1,1,0]}]}],
  synergies:[['digital','network',1,1],['digital','core',0,1],['legible','core',2,1],['human','network',3,1],['human','comes',0,1],['core','adaptive',4,1],['comes','adaptive',2,1],['network','wellness',5,1],['core','wellness',1,1],['human','wellness',5,1]]
 };
-const STORAGE_KEY = 'arthur-care-well-v15';
+const STORAGE_KEY = 'arthur-care-well-v17';
 const OLD_KEY = 'arthur-care-well';
-const SCREEN_ORDER = ['intro','campus','arthur','baseline','howto','launch','d1','d2','d3','impact1','impact2','impact3','reveal1','reveal2','reveal3','watershed1','watershed2','watershed3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
+const SCREEN_ORDER = ['intro','campus','arthur','baseline','howto','launch','d1','d2','d3','impact1','impact2','impact3','reveal1','reveal2','reveal3','watershed1','watershed2','watershed3','shift1','shift2','shift3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
 const app = document.getElementById('app');
 const newId = () => (window.crypto && typeof crypto.randomUUID==='function') ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const fresh = () => ({screen:'intro', helpReturn:null, baselineStep:0, choices:{}, watersheds:{}, reserveApplied:false, strengthened:null, readiness:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null, journeyStep:0});
@@ -50,12 +50,13 @@ function load() {
   if(saved.commitment && ['arrival','care','leave'].includes(saved.commitment.id) && ['enable','coordinate','preserve'].includes(saved.commitment.category))next.commitment={id:saved.commitment.id,category:saved.commitment.category};
   const progress=ids(next.choices).length;
   if(progress===0 && !['intro','campus','arthur','baseline','howto','launch','d1'].includes(next.screen))next.screen='d1';
-  else if(progress===1 && !['intro','d1','impact1','reveal1','watershed1','d2'].includes(next.screen))next.screen='impact1';
-  else if(progress===2 && !['intro','d1','impact1','reveal1','watershed1','d2','impact2','reveal2','watershed2','d3'].includes(next.screen))next.screen='impact2';
+  else if(progress===1 && !['intro','d1','impact1','reveal1','watershed1','shift1','d2'].includes(next.screen))next.screen='impact1';
+  else if(progress===2 && !['intro','d1','impact1','reveal1','watershed1','shift1','d2','impact2','reveal2','watershed2','shift2','d3'].includes(next.screen))next.screen='impact2';
   else if(progress===3 && ['disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen) && !next.readiness)next.screen='readiness';
-  if(progress>=1 && !next.watersheds.arrival && ['d2','impact2','reveal2','watershed2','d3','impact3','reveal3','watershed3','readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed1';
-  else if(progress>=2 && !next.watersheds.care && ['d3','impact3','reveal3','watershed3','readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed2';
+  if(progress>=1 && !next.watersheds.arrival && ['d2','impact2','reveal2','watershed2','shift2','d3','impact3','reveal3','watershed3','shift3','readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed1';
+  else if(progress>=2 && !next.watersheds.care && ['d3','impact3','reveal3','watershed3','shift3','readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed2';
   else if(progress>=3 && !next.watersheds.leave && ['readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed3';
+  if(/^shift[1-3]$/.test(next.screen)){const n=Number(next.screen.slice(5));const key=GAME.decisions[n-1].id;if(!next.watersheds[key])next.screen=`watershed${n}`;}
   if(['result','journeyResult'].includes(next.screen)&&!next.commitment)next.screen='commit';
   next.completed=['result','journeyResult'].includes(next.screen);return next;
  } catch(err){console.warn('Saved game could not be restored',err);return null;}
@@ -109,7 +110,7 @@ const CHAPTERS=[
  {name:'Meet ACHC & Arthur',short:'Meet',icon:'⌂',screens:['intro','campus','arthur']},
  {name:'Arthur’s baseline',short:'Baseline',icon:'①',screens:['baseline']},
  {name:'Learn to play',short:'Learn',icon:'?',screens:['howto','launch']},
- {name:'Investments & watershed choices',short:'Invest',icon:'◆',screens:['d1','impact1','reveal1','watershed1','d2','impact2','reveal2','watershed2','d3','impact3','reveal3','watershed3']},
+ {name:'Investments & watershed choices',short:'Invest',icon:'◆',screens:['d1','impact1','reveal1','watershed1','shift1','d2','impact2','reveal2','watershed2','shift2','d3','impact3','reveal3','watershed3','shift3']},
  {name:'Opening-day choices',short:'Opening',icon:'◷',screens:['readiness']},
  {name:'Arthur’s changed day',short:'Change',icon:'↝',screens:['disruption','pressure']},
  {name:'Design & results',short:'Design',icon:'✓',screens:['lens','commit','result','journeyResult']}
@@ -129,6 +130,7 @@ function render(){
   if(state.screen==='launch')return launchScreen();
   if(state.screen==='readiness')return readinessScreen();
   if(/^watershed[1-3]$/.test(state.screen))return watershedScreen(Number(state.screen.slice(9)));
+  if(/^shift[1-3]$/.test(state.screen))return designShiftScreen(Number(state.screen.slice(5)));
   if(/^impact[1-3]$/.test(state.screen))return investmentImpact(Number(state.screen.slice(6)));
   if(/^reveal[1-3]$/.test(state.screen))return investmentReveal(Number(state.screen.slice(6))); 
   if(state.screen==='disruption')return disruption();
@@ -334,22 +336,22 @@ const REGISTRATION={
 // These operating-model choices have real consequences in playState() and design outputs.
 const WATERSHEDS={
  arrival:{label:'ARRIVAL · THREE BUILDINGS',question:'Who owns Arthur’s welcome across the campus?',intro:'Arthur moves among three buildings and may visit independent providers. Decide how the front door works.',why:'One campus experience does not require one organization—but it does require ownership.',options:[
-  {id:'central',title:'One central welcome',icon:'⌂',layout:'hub',gain:'One recognizable first stop',cost:'Partner intake may still be separate',design:'Main welcome, private exception space, clear connections to all buildings'},
-  {id:'department',title:'Register at each service',icon:'▦',layout:'nodes',gain:'Local provider control',cost:'More check-ins and service-level queues',design:'Distributed intake points, consistent signs, accessible paths'},
-  {id:'federated',title:'Shared welcome + local intake',icon:'↔',layout:'bridge',gain:'One guided journey across providers',cost:'Agreements, status sharing and exception owners',design:'Common welcome plus partner-specific private intake capability'}]},
+  {id:'central',title:'One central welcome',image:'assets/shift-arrival-central.webp',icon:'⌂',layout:'hub',gain:'One recognizable first stop',cost:'Partner intake may still be separate',design:'Main welcome, private exception space, clear connections to all buildings'},
+  {id:'department',title:'Register at each service',image:'assets/shift-arrival-department.webp',icon:'▦',layout:'nodes',gain:'Local provider control',cost:'More check-ins and service-level queues',design:'Distributed intake points, consistent signs, accessible paths'},
+  {id:'federated',title:'Shared welcome + local intake',image:'assets/shift-arrival-federated.webp',icon:'↔',layout:'bridge',gain:'One guided journey across providers',cost:'Agreements, status sharing and exception owners',design:'Common welcome plus partner-specific private intake capability'}]},
  care:{label:'CARE · CAPACITY',question:'Who can change Arthur’s diagnostic sequence?',intro:'Labs, imaging and pre-check may sit in different buildings. When timing shifts, who can reassign appointments?',why:'Shared space is helpful. Shared authority is what changes the schedule.',options:[
-  {id:'local',title:'Each department decides',icon:'▦',layout:'nodes',gain:'Teams protect specialized capacity',cost:'Arthur can wait across disconnected queues',design:'Clear handoff stations and decentralized support areas'},
-  {id:'coordinator',title:'Campus flow coordinator',icon:'◉',layout:'hub',gain:'One owner can negotiate the next slot',cost:'Needs staffing, real-time visibility and escalation rules',design:'Distributed status displays and a coordination touchdown space'},
-  {id:'shared',title:'Shared clinical + ops authority',icon:'↔',layout:'bridge',gain:'Clinical and operations leaders can resequence care',cost:'Requires formal decision rights and partner agreements',design:'Common capacity data, resilient communications and team workpoints'}]},
+  {id:'local',title:'Each department decides',image:'assets/shift-care-local.webp',icon:'▦',layout:'nodes',gain:'Teams protect specialized capacity',cost:'Arthur can wait across disconnected queues',design:'Clear handoff stations and decentralized support areas'},
+  {id:'coordinator',title:'Campus flow coordinator',image:'assets/shift-care-coordinator.webp',icon:'◉',layout:'hub',gain:'One owner can negotiate the next slot',cost:'Needs staffing, real-time visibility and escalation rules',design:'Distributed status displays and a coordination touchdown space'},
+  {id:'shared',title:'Shared clinical + ops authority',image:'assets/shift-care-shared.webp',icon:'↔',layout:'bridge',gain:'Clinical and operations leaders can resequence care',cost:'Requires formal decision rights and partner agreements',design:'Common capacity data, resilient communications and team workpoints'}]},
  leave:{label:'RESPONSE · ADAPTABLE CAMPUS',question:'What happens when the expected pathway changes?',intro:'Urgent care demand rises and Arthur’s procedure plan changes. What must the campus be ready to reorganize?',why:'Flexibility is not a room type. It is space, staffing and an agreed response.',options:[
-  {id:'fixed',title:'Protect specialized settings',icon:'▦',layout:'nodes',gain:'Predictable workflows and dedicated resources',cost:'Surges require escalation and external transfer capacity',design:'Defined triage, separation, recovery and transfer routes'},
-  {id:'flex',title:'Flexible care + recovery zones',icon:'⇄',layout:'bridge',gain:'Adapt select compatible spaces to changing demand',cost:'Cross-trained staffing, monitoring and cleaning must keep up',design:'Universal room provisions, equipment storage and infection-prevention zoning'},
-  {id:'response',title:'Coordinated campus response',icon:'◉',layout:'hub',gain:'See pressure and assign an accountable response',cost:'Decision authority and communications require sustained staffing',design:'Clinical/ops coordination touchpoints, acuity escalation and transfer pathways'}]}
+  {id:'fixed',title:'Protect specialized settings',image:'assets/shift-leave-fixed.webp',icon:'▦',layout:'nodes',gain:'Predictable workflows and dedicated resources',cost:'Surges require escalation and external transfer capacity',design:'Defined triage, separation, recovery and transfer routes'},
+  {id:'flex',title:'Flexible care + recovery zones',image:'assets/shift-leave-flex.webp',icon:'⇄',layout:'bridge',gain:'Adapt select compatible spaces to changing demand',cost:'Cross-trained staffing, monitoring and cleaning must keep up',design:'Universal room provisions, equipment storage and infection-prevention zoning'},
+  {id:'response',title:'Coordinated campus response',image:'assets/shift-leave-response.webp',icon:'◉',layout:'hub',gain:'See pressure and assign an accountable response',cost:'Decision authority and communications require sustained staffing',design:'Clinical/ops coordination touchpoints, acuity escalation and transfer pathways'}]}
 };
 function watershedScreen(n){
  const key=GAME.decisions[n-1].id,w=WATERSHEDS[key];const selected=state.watersheds[key]||null;
  const chosen=w.options.find(o=>o.id===selected);
- app.innerHTML=shell(`<section class="panel watershed-screen"><div class="stage">WATERSHED ${n} OF 3 · ${w.label}</div><h2>${w.question}</h2><p class="watershed-deck">${w.intro}</p><div class="watershed-grid">${w.options.map(o=>`<button class="watershed-choice ${selected===o.id?'is-selected':''}" data-action="watershed-select" data-stage="${key}" data-value="${o.id}" aria-pressed="${selected===o.id}"><span class="watershed-diagram ${o.layout}"><i></i><i></i><i></i><em>${o.icon}</em></span><strong>${o.title}</strong><span class="gain">✓ ${o.gain}</span><span class="burden">↔ ${o.cost}</span></button>`).join('')}</div><div class="watershed-bottom"><div><span class="watershed-caption">THE DESIGN AHA</span><strong>${chosen?escapeHTML(chosen.design):escapeHTML(w.why)}</strong></div><div class="actions"><button class="primary" data-action="watershed-confirm" data-step="${n}" ${chosen?'':'disabled'}>${n===3?'Choose opening-day priority →':'Continue Arthur’s journey →'}</button><button class="secondary" data-action="watershed-back" data-step="${n}">Back to Arthur’s reveal</button></div></div></section>`,n);
+ app.innerHTML=shell(`<section class="panel watershed-screen"><div class="stage">WATERSHED ${n} OF 3 · ${w.label}</div><h2>${w.question}</h2><p class="watershed-deck">${w.intro}</p><div class="watershed-grid">${w.options.map(o=>`<button class="watershed-choice ${selected===o.id?'is-selected':''}" data-action="watershed-select" data-stage="${key}" data-value="${o.id}" aria-pressed="${selected===o.id}"><span class="watershed-visual"><img src="${o.image}" alt="${escapeHTML(o.title)} — illustrative design approach" loading="eager"></span><strong>${o.title}</strong><span class="gain">✓ ${o.gain}</span><span class="burden">↔ ${o.cost}</span></button>`).join('')}</div><div class="watershed-bottom"><div><span class="watershed-caption">THE DESIGN AHA</span><strong>${chosen?escapeHTML(chosen.design):escapeHTML(w.why)}</strong></div><div class="actions"><button class="primary" data-action="watershed-confirm" data-step="${n}" ${chosen?'':'disabled'}>See what your design changes →</button><button class="secondary" data-action="watershed-back" data-step="${n}">Back to Arthur’s reveal</button></div></div></section>`,n);
 }
 function watershedSelect(stage,value){
  if(!WATERSHEDS[stage]?.options.some(o=>o.id===value))return;
@@ -357,8 +359,49 @@ function watershedSelect(stage,value){
 }
 function watershedConfirm(n){
  const d=GAME.decisions[n-1];if(!WATERSHEDS[d.id].options.some(o=>o.id===state.watersheds[d.id]))return;
- state.screen=n<3?`d${n+1}`:'readiness';event('watershed_selected',{stage:d.id,choice:state.watersheds[d.id]});render();
+ state.screen=`shift${n}`;event('watershed_selected',{stage:d.id,choice:state.watersheds[d.id]});render();
 }
+// One short environmental pause, following each watershed decision.
+// This stage has no new spend or score. It translates the chosen operating model
+// into a tangible physical, workforce and digital implication.
+const SHIFT_IMPACTS={
+ arrival:{
+  central:{head:'One recognizable front door.',arch:'A prominent welcome, private exception support and clear routes between all three buildings.',ops:'A central arrival team guides Arthur; independent providers still own their specialized intake.',eng:'Common arrival status, accessible check-in and reliable links to separate provider services.',arthur:'Arthur knows where to begin, but may still check in again with a partner.',insight:'One first stop does not eliminate every provider boundary.'},
+  department:{head:'Each service keeps its own front door.',arch:'Clear department entries, appropriately sized local check-in and easy-to-follow accessible routes.',ops:'Each service owns intake; a handoff process must keep Arthur from getting lost between desks.',eng:'Consistent signage and digital route instructions even when registration systems differ.',arthur:'Arthur sees familiar local teams, but must follow several check-in steps.',insight:'Local independence shifts more wayfinding work onto Arthur.'},
+  federated:{head:'A shared welcome bridges different organizations.',arch:'A common welcome with concierge touchpoints and private partner-specific intake space.',ops:'Navigation staff need visibility of arrivals and named owners for exceptions between services.',eng:'Role-based status exchange, patient navigation and secure partner connection points.',arthur:'Arthur experiences one guided route even when providers register him separately.',insight:'One journey needs shared ownership—not necessarily one system.'}},
+ care:{
+  local:{head:'Specialized departments retain their own capacity.',arch:'Distinct diagnostics, preparation and consultation destinations connected by accessible routes.',ops:'Service teams protect their own slots; escalation and agreed handoffs remain critical.',eng:'Reliable appointment status exchange and clear service-by-service communications.',arthur:'Arthur can complete each test, but delays may still ripple across separate queues.',insight:'Protected specialty capacity does not automatically connect the schedule.'},
+  coordinator:{head:'A coordinator can negotiate Arthur’s next step.',arch:'Small flow-coordination workpoints and status visibility near service interfaces.',ops:'A named coordinator needs scheduling access, escalation protocols and service contacts.',eng:'A shared operational picture, timely status updates and reliable team communications.',arthur:'When imaging falls behind, someone can try to protect his next appointment.',insight:'Visibility is valuable when a person can act on it.'},
+  shared:{head:'Clinical and operations teams can resequence care.',arch:'Coordinated diagnostic access, flexible team touchdown areas and clear travel routes.',ops:'Clinical authority and scheduling authority agree who can reprioritize competing needs.',eng:'Common readiness and capacity information, secure communications and resilient integration.',arthur:'The team can reconsider his sequence when the plan changes, not just report the delay.',insight:'Shared authority—not shared walls—is what can change the schedule.'}},
+ leave:{
+  fixed:{head:'Specialized settings remain protected.',arch:'Purpose-designed treatment, recovery and triage areas with safe separation and transfer paths.',ops:'Dedicated teams keep predictable workflows while higher acuity follows explicit escalation routes.',eng:'Specialty clinical services, appropriate monitoring and dependable transfer communication.',arthur:'His planned pathway remains clear, but changes may require a different setting or transfer.',insight:'Specialization improves reliability while limiting how far capacity can flex.'},
+  flex:{head:'Selected spaces can adapt to changing needs.',arch:'Compatible recovery/observation rooms, storage, support space and infection-prevention zoning.',ops:'Qualified staff, turnover, cleaning and equipment availability must change with the room use.',eng:'Adaptable power, communications, monitoring and appropriate room-specific services.',arthur:'Arthur can remain in a suitable setting longer if the team and equipment are available.',insight:'Flexible rooms work only when staffing and support flex with them.'},
+  response:{head:'One campus response coordinates competing demand.',arch:'Distributed response touchpoints and clear clinical escalation and transport paths.',ops:'Clinical and operational leaders need shared visibility, staffing and decision rights.',eng:'Live capacity signals, dependable communications and escalation/transfer coordination tools.',arthur:'His change in plan is visible to the people who can coordinate the next safe step.',insight:'A command function is accountable action, not just a dashboard.'}}
+};
+function designShiftScreen(n){
+ const stage=GAME.decisions[n-1].id,w=WATERSHEDS[stage],key=state.watersheds[stage];
+ const chosen=w.options.find(x=>x.id===key),s=SHIFT_IMPACTS[stage]?.[key];
+ if(!chosen||!s){state.screen=`watershed${n}`;save();return render();}
+ const photo=`assets/shift-${stage}-${key}.webp`;
+ app.innerHTML=shell(`<section class="panel design-shift-screen">
+ <div class="stage">DESIGN SHIFT ${n} OF 3 · THE ENVIRONMENT CHANGES</div>
+ <h2>${escapeHTML(s.head)}</h2><p class="shift-intro">You chose <b>${escapeHTML(chosen.title)}</b>. Here is what ACHC must make possible.</p>
+ <div class="shift-layout"><div class="shift-image"><img src="${photo}" alt="Illustrative environment for ${escapeHTML(chosen.title)}" loading="eager"><span class="shift-photo-note">Illustrative design direction, not an approved ACHC layout</span></div>
+ <div class="shift-implications">
+ <div class="shift-impact"><span class="shift-icon">⌂</span><div><strong>Architecture</strong><p>${escapeHTML(s.arch)}</p></div></div>
+ <div class="shift-impact"><span class="shift-icon">♧</span><div><strong>Operations & staffing</strong><p>${escapeHTML(s.ops)}</p></div></div>
+ <div class="shift-impact"><span class="shift-icon">▣</span><div><strong>Engineering & digital</strong><p>${escapeHTML(s.eng)}</p></div></div>
+ </div></div>
+ <div class="shift-arthur"><span class="shift-label">WHAT ARTHUR EXPERIENCES</span><strong>${escapeHTML(s.arthur)}</strong></div>
+ <div class="shift-footer"><div class="shift-insight"><span>THE DESIGN AHA</span><b>${escapeHTML(s.insight)}</b></div><div class="actions"><button class="secondary" data-action="shift-back" data-step="${n}">← Reconsider this model</button><button class="primary" data-action="shift-next" data-step="${n}">${n===3?'Set opening-day priority →':`Continue to investment ${n+1} →`}</button></div></div>
+ </section>`,n);
+}
+function shiftNext(n){
+ const stage=GAME.decisions[n-1]?.id;
+ if(!stage||!state.watersheds[stage]){state.screen=`watershed${n}`;save();return render();}
+ state.screen=n<3?`d${n+1}`:'readiness';event('design_shift_seen',{stage,option:state.watersheds[stage]});render();
+}
+function shiftBack(n){state.screen=`watershed${n}`;save();render();}
 function watershedBack(n){state.screen=`reveal${n}`;save();render();}
 function reserveAvailable(){const t=totals(),b=GAME.budgets;return b.change-t.change>=1 && b.operations-t.operations>=1;}
 function readinessScreen(){
@@ -602,6 +645,8 @@ app.addEventListener('click',e=>{
     case 'watershed-select':watershedSelect(btn.dataset.stage,btn.dataset.value);break;
     case 'watershed-confirm':watershedConfirm(Number(btn.dataset.step));break;
     case 'watershed-back':watershedBack(Number(btn.dataset.step));break;
+    case 'shift-next':shiftNext(Number(btn.dataset.step));break;
+    case 'shift-back':shiftBack(Number(btn.dataset.step));break;
     case 'reserve-toggle':if(reserveAvailable()){state.reserveApplied=!state.reserveApplied;event('reserve_changed',{active:state.reserveApplied});render();}break;
     case 'return-impact':state.screen=`impact${Number(btn.dataset.step)}`;save();render();break;
     case 'back':back(Number(btn.dataset.step));break;
