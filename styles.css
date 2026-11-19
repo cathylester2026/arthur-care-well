@@ -425,3 +425,17 @@ button:disabled{cursor:not-allowed;opacity:.56;transform:none}
 /* Keep the illustrative-image disclaimer away from the scene title. */
 .shift-photo-note{top:10px;right:10px;bottom:auto;left:auto;max-width:46%;font-size:.62rem;line-height:1.2}
 @media(max-width:620px){.shift-photo-note{display:none}}
+
+/* v1.8: persistent resource context and operational readiness */
+.resource-ribbon{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:11px 16px;margin:9px 0 13px;border:1px solid #c9dfd4;background:#f3f8f4;border-radius:14px;color:#15493d;font-family:inherit}
+.resource-caption{font-size:.68rem;font-weight:850;letter-spacing:.075em;max-width:145px;line-height:1.3}
+.resource-items{display:flex;flex:1;gap:14px;min-width:230px}
+.resource-item{flex:1;min-width:70px}.resource-item>span{display:flex;justify-content:space-between;gap:4px;font-size:.76rem;font-weight:650}.resource-item b{font-weight:850;white-space:nowrap}
+.resource-track{height:6px;background:#dbe5dc;border-radius:20px;overflow:hidden;margin-top:5px}
+.resource-track i{height:100%;display:block;border-radius:20px}.resource-track .capital{background:#188d82}.resource-track .change{background:#9561b5}.resource-track .operations{background:#ce8541}
+.resource-ribbon>small{font-size:.67rem;max-width:125px;color:#507366;line-height:1.3}
+.watershed-choice .operating-commitment{display:block;font-size:.7rem;color:#315f52;font-weight:750;line-height:1.3;margin-top:5px}
+.shift-readiness{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;padding:12px 16px;margin:12px 0;border-radius:13px;font-size:.87rem;line-height:1.4;border:1px solid #cae0d0;background:#eaf5ed;color:#15533f}
+.shift-readiness.phased{border-color:#e9ca9e;background:#fff5e9;color:#74441e}
+.shift-readiness-title{font-weight:850;min-width:220px;flex:0 0 auto}.shift-readiness>span:nth-child(2){flex:1;min-width:230px}.shift-readiness small{font-size:.75rem;opacity:.9;width:100%}
+@media(max-width:700px){.resource-ribbon{padding:9px 10px;gap:7px}.resource-caption{max-width:none;width:100%}.resource-ribbon>small{display:none}.resource-items{gap:8px;min-width:0}.resource-item>span{font-size:.67rem}.shift-readiness-title{min-width:0}.shift-readiness>span:nth-child(2){min-width:0}}

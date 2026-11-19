@@ -1,1 +1,1 @@
-window.ARTHUR_CONFIG = { supabaseUrl:"", supabaseAnonKey:"", gameVersion:"care-well-sp-1.7.0" };
+window.ARTHUR_CONFIG = { supabaseUrl:"", supabaseAnonKey:"", gameVersion:"care-well-sp-1.8.0" };

@@ -1,16 +1,14 @@
-# Arthur · Care Well v1.7 — Design Shift
+# Arthur · Care Well v1.8 — Resource Readiness & Graphics Stabilization
 
-Complete single-player GitHub Pages replacement. Replace repository root files and the entire `assets/` directory.
+Upload every file and `assets/` folder to the GitHub Pages repository root, including the new `asset-bundle.js`. Replace older files; check the displayed version `care-well-sp-1.8.0` and hard refresh.
 
 ## Changes
-- A short **Design Shift** screen follows each of the three watershed choices, before the next investment / opening-day priority.
-- Every Design Shift responds to the actual chosen operating model, showing architecture, staffing/operations, engineering/digital and Arthur's lived experience.
-- Watershed cards now use nine visually distinct photographic environmental scenes rather than abstract box diagrams.
-- All investment choices, scoring, resource budgets, future readiness, disruption and final outcomes remain unchanged.
-- New saved-game namespace: `arthur-care-well-v17`; the player begins at the introduction and may resume a saved v1.7 game.
+- Persistent resource strip shows Capital, Change and Operations used/remaining during play.
+- Watershed choices remain visions, but have implementation requirements separate from the three investment costs.
+- The Design Shift shows whether the model can become operational if prioritized at opening or must be phased.
+- Opening-day readiness shows the same feasibility logic. Only the selected priority may activate a watershed model, and only if its resources fit.
+- Limited response reserve deducts from genuinely uncommitted capacity after the active operating model.
+- Nine watershed illustrations and nine Design Shift illustrations are embedded directly into `asset-bundle.js`, eliminating missing-image failures when the image folder isn't uploaded correctly. Other existing imagery remains in `assets/`.
+- All decisions, story screens, and six Design Moments are preserved.
 
-## Sequence
-Decision → Investment Impact → Arthur Reveal → Watershed Decision → **Design Shift** → next decision.
-
-## Notes
-Images are illustrative, not approved Airdrie facility designs or clinical protocols. Watershed Design Shifts have no additional scoring or resource charge.
+These are simulation resource values, not estimates of actual facility capital or clinical staffing needs.
