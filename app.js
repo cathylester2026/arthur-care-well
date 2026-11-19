@@ -18,12 +18,12 @@ const GAME={
  {id:'wellness',letter:'C',name:'Connected Wellness',tag:'Use the procedure as the beginning of Arthur’s next care plan.',creates:['Confirmed follow-up','Connected medication and recovery','Continued support'],requires:['Wellness navigation','Virtual care','Named follow-up ownership'],risk:'A referral is not continuity unless capacity and ownership exist.',cost:[2,3,3],impact:[3,3,2,2,2,3],strength:'Closed-Loop Wellness',boost:[0,0,0,1,1,0]}]}],
  synergies:[['digital','network',1,1],['digital','core',0,1],['legible','core',2,1],['human','network',3,1],['human','comes',0,1],['core','adaptive',4,1],['comes','adaptive',2,1],['network','wellness',5,1],['core','wellness',1,1],['human','wellness',5,1]]
 };
-const STORAGE_KEY = 'arthur-care-well-v14';
+const STORAGE_KEY = 'arthur-care-well-v15';
 const OLD_KEY = 'arthur-care-well';
-const SCREEN_ORDER = ['intro','campus','arthur','baseline','howto','launch','d1','d2','d3','impact1','impact2','impact3','reveal1','reveal2','reveal3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
+const SCREEN_ORDER = ['intro','campus','arthur','baseline','howto','launch','d1','d2','d3','impact1','impact2','impact3','reveal1','reveal2','reveal3','watershed1','watershed2','watershed3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
 const app = document.getElementById('app');
 const newId = () => (window.crypto && typeof crypto.randomUUID==='function') ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const fresh = () => ({screen:'intro', helpReturn:null, baselineStep:0, choices:{}, strengthened:null, readiness:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null, journeyStep:0});
+const fresh = () => ({screen:'intro', helpReturn:null, baselineStep:0, choices:{}, watersheds:{}, reserveApplied:false, strengthened:null, readiness:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null, journeyStep:0});
 function load() {
  try {
   const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return null;
@@ -32,8 +32,12 @@ function load() {
   for(const d of GAME.decisions){if(d.options.some(o=>o.id===saved.choices[d.id]))next.choices[d.id]=saved.choices[d.id];}
   // Reject invalid and over-budget portfolios, including edited localStorage.
   if(!withinBudget(next.choices))return null;
-  if(['central','department','federated'].includes(saved.readiness?.registration) &&
-     ['arrival','care','leave'].includes(saved.readiness?.priority))next.readiness={registration:saved.readiness.registration,priority:saved.readiness.priority};
+  for(const [stage,valid] of [['arrival',['central','department','federated']],['care',['local','coordinator','shared']],['leave',['fixed','flex','response']]]){
+    if(valid.includes(saved.watersheds?.[stage]))next.watersheds[stage]=saved.watersheds[stage];
+  }
+  if(['arrival','care','leave'].includes(saved.readiness?.priority) && next.watersheds.arrival)
+    next.readiness={registration:next.watersheds.arrival,priority:saved.readiness.priority};
+  next.reserveApplied=Boolean(saved.reserveApplied)&&next.readiness!==null;
   if(next.readiness)next.strengthened=next.choices[next.readiness.priority]||null;
   if(SCREEN_ORDER.includes(saved.screen))next.screen=saved.screen;
   if(typeof saved.startedAt==='string')next.startedAt=saved.startedAt;
@@ -46,9 +50,12 @@ function load() {
   if(saved.commitment && ['arrival','care','leave'].includes(saved.commitment.id) && ['enable','coordinate','preserve'].includes(saved.commitment.category))next.commitment={id:saved.commitment.id,category:saved.commitment.category};
   const progress=ids(next.choices).length;
   if(progress===0 && !['intro','campus','arthur','baseline','howto','launch','d1'].includes(next.screen))next.screen='d1';
-  else if(progress===1 && !['intro','d1','impact1','reveal1','d2'].includes(next.screen))next.screen='impact1';
-  else if(progress===2 && !['intro','d1','impact1','reveal1','d2','impact2','reveal2','d3'].includes(next.screen))next.screen='impact2';
+  else if(progress===1 && !['intro','d1','impact1','reveal1','watershed1','d2'].includes(next.screen))next.screen='impact1';
+  else if(progress===2 && !['intro','d1','impact1','reveal1','watershed1','d2','impact2','reveal2','watershed2','d3'].includes(next.screen))next.screen='impact2';
   else if(progress===3 && ['disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen) && !next.readiness)next.screen='readiness';
+  if(progress>=1 && !next.watersheds.arrival && ['d2','impact2','reveal2','watershed2','d3','impact3','reveal3','watershed3','readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed1';
+  else if(progress>=2 && !next.watersheds.care && ['d3','impact3','reveal3','watershed3','readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed2';
+  else if(progress>=3 && !next.watersheds.leave && ['readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed3';
   if(['result','journeyResult'].includes(next.screen)&&!next.commitment)next.screen='commit';
   next.completed=['result','journeyResult'].includes(next.screen);return next;
  } catch(err){console.warn('Saved game could not be restored',err);return null;}
@@ -102,7 +109,7 @@ const CHAPTERS=[
  {name:'Meet ACHC & Arthur',short:'Meet',icon:'⌂',screens:['intro','campus','arthur']},
  {name:'Arthur’s baseline',short:'Baseline',icon:'①',screens:['baseline']},
  {name:'Learn to play',short:'Learn',icon:'?',screens:['howto','launch']},
- {name:'Investments',short:'Invest',icon:'◆',screens:['d1','impact1','reveal1','d2','impact2','reveal2','d3','impact3','reveal3']},
+ {name:'Investments & watershed choices',short:'Invest',icon:'◆',screens:['d1','impact1','reveal1','watershed1','d2','impact2','reveal2','watershed2','d3','impact3','reveal3','watershed3']},
  {name:'Opening-day choices',short:'Opening',icon:'◷',screens:['readiness']},
  {name:'Arthur’s changed day',short:'Change',icon:'↝',screens:['disruption','pressure']},
  {name:'Design & results',short:'Design',icon:'✓',screens:['lens','commit','result','journeyResult']}
@@ -121,6 +128,7 @@ function render(){
   if(state.screen==='howto')return howToScreen();
   if(state.screen==='launch')return launchScreen();
   if(state.screen==='readiness')return readinessScreen();
+  if(/^watershed[1-3]$/.test(state.screen))return watershedScreen(Number(state.screen.slice(9)));
   if(/^impact[1-3]$/.test(state.screen))return investmentImpact(Number(state.screen.slice(6)));
   if(/^reveal[1-3]$/.test(state.screen))return investmentReveal(Number(state.screen.slice(6))); 
   if(state.screen==='disruption')return disruption();
@@ -147,7 +155,7 @@ function begin(){state=fresh();state.startedAt=new Date().toISOString();state.sc
 function resume(){const saved=load();if(!saved)return begin();state=saved;render();}
 function storyHome(){state.screen='intro';render();}
 function campusScreen(){
- app.innerHTML=shell(`<section class="panel story-panel"><div class="story-step">THE PLACE · 01 / 03</div><h2>One health centre. Many care journeys.</h2><p class="lede">Airdrie Covenant Health Centre (ACHC) is being envisioned as a connected ecosystem—not simply an inventory of rooms and departments.</p><div class="story-image">${designScene('access',2,'hero')}<span class="story-image-tag">Illustrative campus future</span></div><div class="service-cloud" aria-label="Services in the campus"><span>Urgent care</span><span>Outpatient clinics</span><span>Laboratory + diagnostics</span><span>Imaging</span><span>Day surgery</span><span>Pharmacy</span><span>Maternal care</span><span>Behavioral health</span><span>Independent partners</span></div><div class="story-callout"><span class="story-symbol">↔</span><div><strong>The design challenge</strong><p>People, information and responsibility must move across services—even when some providers operate outside Covenant Health.</p></div></div><div class="actions"><button class="primary" data-action="next-opening" data-dest="arthur">Meet Arthur →</button><button class="secondary" data-action="open-gallery">See the six design futures</button></div><p class="small">Illustrative visioning scenario. Service arrangements and operational models are not approved specifications.</p></section>`);
+ app.innerHTML=shell(`<section class="panel story-panel"><div class="story-step">THE PLACE · 01 / 03</div><h2>One health centre. Many care journeys.</h2><p class="lede">Airdrie Covenant Health Centre (ACHC) is being envisioned as a three-building connected ecosystem—not simply an inventory of rooms and departments.</p><div class="story-image">${designScene('access',2,'hero')}<span class="story-image-tag">Illustrative campus future</span></div><div class="service-cloud" aria-label="Services in the campus"><span>Urgent care</span><span>Outpatient clinics</span><span>Laboratory + diagnostics</span><span>Imaging</span><span>Day surgery</span><span>Pharmacy</span><span>Maternal care</span><span>Behavioral health</span><span>Independent partners</span></div><div class="story-callout"><span class="story-symbol">↔</span><div><strong>The design challenge</strong><p>People, information and responsibility must move across buildings and services—even when some providers operate outside Covenant Health.</p></div></div><div class="actions"><button class="primary" data-action="next-opening" data-dest="arthur">Meet Arthur →</button><button class="secondary" data-action="open-gallery">See the six design futures</button></div><p class="small">Illustrative visioning scenario. Service arrangements and operational models are not approved specifications.</p></section>`);
 }
 function arthurScreen(){
  app.innerHTML=shell(`<section class="panel story-panel"><div class="story-step">THE PERSON · 02 / 03</div><h2>Arthur has a procedure coming up.</h2><div class="arthur-layout"><div class="arthur-portrait"><div class="person-illustration" role="img" aria-label="Illustration representing Arthur at home reviewing care instructions"><svg viewBox="0 0 440 350" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="room" x2="1" y2="1"><stop stop-color="#d7ebe3"/><stop offset="1" stop-color="#f6e7d3"/></linearGradient></defs><rect width="440" height="350" fill="url(#room)"/><rect x="34" y="22" width="140" height="186" rx="10" fill="#f5f8f3"/><rect x="51" y="36" width="106" height="158" fill="#c1e5e6"/><path d="M51 164Q100 118 157 153V194H51Z" fill="#96b7a6"/><rect x="0" y="282" width="440" height="68" fill="#b77e59"/><rect x="250" y="194" width="159" height="98" rx="12" fill="#faf9f4" transform="rotate(-7 250 194)"/><path d="M278 222h100M278 239h84M278 256h90" stroke="#8db4ae" stroke-width="6" stroke-linecap="round"/><path d="M96 303V223Q96 150 184 150H252Q328 150 329 242V303" fill="#3b7977"/><ellipse cx="214" cy="130" rx="73" ry="84" fill="#e9bc9c"/><path d="M142 111q-10-89 71-92 88-5 76 92-25-30-53-26-60 0-94 26Z" fill="#dce2de"/><path d="M154 148q27 16 54 0M222 148q28 13 51-2" fill="none" stroke="#9c6650" stroke-width="4"/><rect x="150" y="117" width="53" height="30" rx="14" fill="none" stroke="#354e52" stroke-width="5"/><rect x="220" y="117" width="53" height="30" rx="14" fill="none" stroke="#354e52" stroke-width="5"/><path d="M204 130h14" stroke="#354e52" stroke-width="5"/><path d="M198 184q17 12 33 0" fill="none" stroke="#a86c61" stroke-width="4"/><path d="M170 278q62-30 118 9" stroke="#d9ede6" stroke-width="13" fill="none"/></svg></div><div class="portrait-caption">Arthur · 72 · Preparing for outpatient care</div></div><div class="arthur-story"><p>Arthur and his wife have planned around a forthcoming outpatient procedure. Before it can proceed, his care team has asked him to complete three steps at the centre.</p><div class="three-needs"><span>◉ Lab work</span><span>▣ Imaging</span><span>♧ Pre-check consult</span></div><div class="arthur-quote">“I don't mind the tests. I just want to know everyone has what they need so my procedure stays on track.”</div><p class="small">Arthur and his procedure are fictional; these pre-procedure requirements are assumptions for the game, not universal clinical rules.</p></div></div><div class="actions"><button class="primary" data-action="next-opening" data-dest="baseline">Walk Arthur's visit →</button><button class="secondary" data-action="next-opening" data-dest="campus">Back to campus</button></div></section>`);
@@ -193,7 +201,8 @@ function choose(did,oid){
   if(!optionAvailable(did,oid)){const msg=document.getElementById('msg');if(msg)msg.textContent='This choice would prevent a complete visit within the resource budget. Revise your earlier choices.';return;}
   const n=GAME.decisions.findIndex(d=>d.id===did)+1;
   for(let i=n;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
-  state.readiness=null;state.strengthened=null;
+  state.readiness=null;state.strengthened=null;state.reserveApplied=false;
+  const order=['arrival','care','leave'];for(let i=order.indexOf(did);i<order.length;i++)delete state.watersheds[order[i]];
   state.choices[did]=oid;
   state.completed=false;state.commitment=null;
   state.screen=`impact${n}`;
@@ -213,7 +222,7 @@ const INVESTMENT_STORIES = {
  wellness:{moment:'adapt',image:2,need:'Arthur wants someone to own the next step after he leaves.',gain:'Medication, follow-up and ongoing care are treated as part of the same journey.',cost:'Partner referral acceptance, clinical accountability and information-sharing agreements take effort.',opening:'A named follow-up owner can improve continuity even with manual partner workflows.',future:'Virtual follow-up and richer closed-loop partner integration can mature later.',design:'Protect private education space, connected consult capacity and resilient partner interfaces.'}
 };
 
-const INVESTMENT_VISUALS={digital:'digital-story.webp',legible:'legible-wayfinding.webp',human:'human-guide.webp',network:'department-network.webp',core:'core-story.webp',wellness:'wellness-story.webp'};
+const INVESTMENT_VISUALS={digital:'digital-story.webp',legible:'legible-wayfinding.webp',human:'human-guide.webp',network:'department-network.webp',core:'core-story.webp',fast:'work-2.webp',adaptive:'adapt-2.webp',wellness:'wellness-story.webp'};
 function investmentScene(oid,variant='card'){
   const photo=INVESTMENT_VISUALS[oid];
   if(photo)return `<span class="design-scene ${variant} investment-art ${oid}-art"><img src="assets/${photo}" alt="Visual concept for ${escapeHTML(option(oid).name)}" loading="lazy"></span>`;
@@ -309,11 +318,11 @@ function investmentReveal(n){
 }
 
 function continueImpact(n){if(n<1||n>3||!state.choices[GAME.decisions[n-1].id])return;state.screen=`reveal${n}`;save();render();}
-function continueReveal(n){if(n<1||n>3||!state.choices[GAME.decisions[n-1].id])return;state.screen=n<3?`d${n+1}`:'readiness';save();render();}
+function continueReveal(n){if(n<1||n>3||!state.choices[GAME.decisions[n-1].id])return;state.screen=`watershed${n}`;save();render();}
 function back(n){
  if(n<1||n>3)return;
  for(let i=n-1;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
- state.readiness=null;state.strengthened=null;state.completed=false;state.commitment=null;
+ state.readiness=null;state.strengthened=null;state.completed=false;state.commitment=null;state.reserveApplied=false;for(let i=n-1;i<3;i++)delete state.watersheds[GAME.decisions[i].id];
  state.screen=`d${n}`;save();render();
 }
 const REGISTRATION={
@@ -321,17 +330,48 @@ const REGISTRATION={
  department:{name:'Department / setting registration',gain:'Each service retains control of its own eligibility, privacy and intake workflow.',cost:'Arthur can be asked to repeat details and navigate several desks.',ops:'Create consistent referral instructions and named handoff owners across organizations.',place:'Allow local registration points, visible service entries and accessible circulation between them.'},
  federated:{name:'Federated welcome',gain:'One campus welcome and identity guidance with service-specific registration where required.',cost:'Shared status, consent and partner agreements must be negotiated and maintained.',ops:'Agree who shares what information, reconciles identity, manages exceptions and accepts referrals.',place:'Combine common welcome infrastructure with flexible private intake capacity for providers.'}
 };
+// One watershed moment after each investment, not another investment round.
+// These operating-model choices have real consequences in playState() and design outputs.
+const WATERSHEDS={
+ arrival:{label:'ARRIVAL · THREE BUILDINGS',question:'Who owns Arthur’s welcome across the campus?',intro:'Arthur moves among three buildings and may visit independent providers. Decide how the front door works.',why:'One campus experience does not require one organization—but it does require ownership.',options:[
+  {id:'central',title:'One central welcome',icon:'⌂',layout:'hub',gain:'One recognizable first stop',cost:'Partner intake may still be separate',design:'Main welcome, private exception space, clear connections to all buildings'},
+  {id:'department',title:'Register at each service',icon:'▦',layout:'nodes',gain:'Local provider control',cost:'More check-ins and service-level queues',design:'Distributed intake points, consistent signs, accessible paths'},
+  {id:'federated',title:'Shared welcome + local intake',icon:'↔',layout:'bridge',gain:'One guided journey across providers',cost:'Agreements, status sharing and exception owners',design:'Common welcome plus partner-specific private intake capability'}]},
+ care:{label:'CARE · CAPACITY',question:'Who can change Arthur’s diagnostic sequence?',intro:'Labs, imaging and pre-check may sit in different buildings. When timing shifts, who can reassign appointments?',why:'Shared space is helpful. Shared authority is what changes the schedule.',options:[
+  {id:'local',title:'Each department decides',icon:'▦',layout:'nodes',gain:'Teams protect specialized capacity',cost:'Arthur can wait across disconnected queues',design:'Clear handoff stations and decentralized support areas'},
+  {id:'coordinator',title:'Campus flow coordinator',icon:'◉',layout:'hub',gain:'One owner can negotiate the next slot',cost:'Needs staffing, real-time visibility and escalation rules',design:'Distributed status displays and a coordination touchdown space'},
+  {id:'shared',title:'Shared clinical + ops authority',icon:'↔',layout:'bridge',gain:'Clinical and operations leaders can resequence care',cost:'Requires formal decision rights and partner agreements',design:'Common capacity data, resilient communications and team workpoints'}]},
+ leave:{label:'RESPONSE · ADAPTABLE CAMPUS',question:'What happens when the expected pathway changes?',intro:'Urgent care demand rises and Arthur’s procedure plan changes. What must the campus be ready to reorganize?',why:'Flexibility is not a room type. It is space, staffing and an agreed response.',options:[
+  {id:'fixed',title:'Protect specialized settings',icon:'▦',layout:'nodes',gain:'Predictable workflows and dedicated resources',cost:'Surges require escalation and external transfer capacity',design:'Defined triage, separation, recovery and transfer routes'},
+  {id:'flex',title:'Flexible care + recovery zones',icon:'⇄',layout:'bridge',gain:'Adapt select compatible spaces to changing demand',cost:'Cross-trained staffing, monitoring and cleaning must keep up',design:'Universal room provisions, equipment storage and infection-prevention zoning'},
+  {id:'response',title:'Coordinated campus response',icon:'◉',layout:'hub',gain:'See pressure and assign an accountable response',cost:'Decision authority and communications require sustained staffing',design:'Clinical/ops coordination touchpoints, acuity escalation and transfer pathways'}]}
+};
+function watershedScreen(n){
+ const key=GAME.decisions[n-1].id,w=WATERSHEDS[key];const selected=state.watersheds[key]||null;
+ const chosen=w.options.find(o=>o.id===selected);
+ app.innerHTML=shell(`<section class="panel watershed-screen"><div class="stage">WATERSHED ${n} OF 3 · ${w.label}</div><h2>${w.question}</h2><p class="watershed-deck">${w.intro}</p><div class="watershed-grid">${w.options.map(o=>`<button class="watershed-choice ${selected===o.id?'is-selected':''}" data-action="watershed-select" data-stage="${key}" data-value="${o.id}" aria-pressed="${selected===o.id}"><span class="watershed-diagram ${o.layout}"><i></i><i></i><i></i><em>${o.icon}</em></span><strong>${o.title}</strong><span class="gain">✓ ${o.gain}</span><span class="burden">↔ ${o.cost}</span></button>`).join('')}</div><div class="watershed-bottom"><div><span class="watershed-caption">THE DESIGN AHA</span><strong>${chosen?escapeHTML(chosen.design):escapeHTML(w.why)}</strong></div><div class="actions"><button class="primary" data-action="watershed-confirm" data-step="${n}" ${chosen?'':'disabled'}>${n===3?'Choose opening-day priority →':'Continue Arthur’s journey →'}</button><button class="secondary" data-action="watershed-back" data-step="${n}">Back to Arthur’s reveal</button></div></div></section>`,n);
+}
+function watershedSelect(stage,value){
+ if(!WATERSHEDS[stage]?.options.some(o=>o.id===value))return;
+ state.watersheds[stage]=value;state.readiness=null;state.reserveApplied=false;state.commitment=null;save();render();
+}
+function watershedConfirm(n){
+ const d=GAME.decisions[n-1];if(!WATERSHEDS[d.id].options.some(o=>o.id===state.watersheds[d.id]))return;
+ state.screen=n<3?`d${n+1}`:'readiness';event('watershed_selected',{stage:d.id,choice:state.watersheds[d.id]});render();
+}
+function watershedBack(n){state.screen=`reveal${n}`;save();render();}
+function reserveAvailable(){const t=totals(),b=GAME.budgets;return b.change-t.change>=1 && b.operations-t.operations>=1;}
 function readinessScreen(){
- if(ids().length!==3){state.screen='d3';save();return render();}
+ if(ids().length!==3 || !state.watersheds.arrival || !state.watersheds.care || !state.watersheds.leave){state.screen='watershed3';save();return render();}
  const ready=state.readiness||{};
- app.innerHTML=shell(`<section class="panel"><div class="stage">Opening day · A real trade-off</div><h2>You cannot launch everything at once.</h2><p class="lede">All three investments create value. Concentrate the full opening-day operational effort on one; the other two provide design value or a platform for later implementation. They are not failed investments.</p><div class="choice-summary">${summary()}</div><h3 class="lens-heading">What must be operational at opening?</h3><div class="commit-options" role="radiogroup" aria-label="Opening day priority">${GAME.decisions.map(d=>{const o=option(state.choices[d.id]);return `<label class="commit-option"><input type="radio" name="priority" value="${d.id}" ${ready.priority===d.id?'checked':''}><span><small>${d.title}</small><strong>${escapeHTML(o.name)}</strong><span>Ready with workflows, owners and supporting services. Other choices remain planned, not fully live.</span></span></label>`}).join('')}</div><h3 class="lens-heading">Who registers Arthur across organizational boundaries?</h3><p>${momentTrigger('access','Learn more · Compare registration futures')}</p><p class="lede">The campus includes independently operated services that may not share Covenant Health's registration system or policies. Choose a model, including its burden.</p><div class="commit-options" role="radiogroup" aria-label="Registration model">${Object.entries(REGISTRATION).map(([id,r])=>`<label class="commit-option"><input type="radio" name="registration" value="${id}" ${ready.registration===id?'checked':''}><span><strong>${escapeHTML(r.name)}</strong><span><b>Enables:</b> ${escapeHTML(r.gain)}</span><span><b>Costs / risks:</b> ${escapeHTML(r.cost)}</span></span></label>`).join('')}</div><div id="msg" class="error" role="status" aria-live="polite"></div><div class="actions"><button class="primary" data-action="set-readiness">Open the campus: test your choices</button><button class="secondary" data-action="back" data-step="3">Change departure design</button></div></section>`,4);
+ app.innerHTML=shell(`<section class="panel compact-readiness"><div class="stage">OPENING DAY · WHAT WILL BE READY?</div><h2>You cannot activate everything at opening.</h2><p class="lede">Each investment has value. Choose one to operate fully first; the others remain enabled for later.</p><div class="readiness-mini">${GAME.decisions.map(d=>{const o=option(state.choices[d.id]);return `<label class="priority-tile ${ready.priority===d.id?'selected':''}"><input type="radio" name="priority" value="${d.id}" ${ready.priority===d.id?'checked':''}><span class="priority-title">${o.name}</span><small>${d.id==='arrival'?'Meet Arthur':d.id==='care'?'Coordinate his care':'Support the next step'}</small></label>`}).join('')}</div><div class="readiness-recap"><strong>Your operating-model choices</strong><span>Welcome: ${escapeHTML(WATERSHEDS.arrival.options.find(o=>o.id===state.watersheds.arrival).title)}</span><span>Care: ${escapeHTML(WATERSHEDS.care.options.find(o=>o.id===state.watersheds.care).title)}</span><span>Response: ${escapeHTML(WATERSHEDS.leave.options.find(o=>o.id===state.watersheds.leave).title)}</span></div><p class="readiness-note">A physically enabled capability may still require staffing, technology and cross-provider agreements before it is operational.</p><div id="msg" class="error" role="status" aria-live="polite"></div><div class="actions"><button class="primary" data-action="set-readiness">Test the campus under pressure →</button><button class="secondary" data-action="watershed-back" data-step="3">Reconsider response model</button></div></section>`,4);
 }
 function setReadiness(){
  const p=document.querySelector('input[name="priority"]:checked')?.value;
- const r=document.querySelector('input[name="registration"]:checked')?.value;
- if(!['arrival','care','leave'].includes(p)||!REGISTRATION[r]){document.getElementById('msg').textContent='Choose both an opening-day priority and a registration approach.';return;}
- state.readiness={priority:p,registration:r};state.strengthened=state.choices[p];
- state.completed=false;state.commitment=null;state.screen='disruption';event('opening_day_decided',{priority:p,registration:r});render();
+ const r=state.watersheds.arrival;
+ if(!['arrival','care','leave'].includes(p)||!REGISTRATION[r]){document.getElementById('msg').textContent='Choose one opening-day priority to continue.';return;}
+ state.readiness={priority:p,registration:r};state.strengthened=state.choices[p];state.reserveApplied=false;
+ state.completed=false;state.commitment=null;state.screen='disruption';event('opening_day_decided',{priority:p,registration:r,watersheds:state.watersheds});render();
 }
 function summary(){return GAME.decisions.map(d=>{const o=option(state.choices[d.id]);return `<div><small>${escapeHTML(d.title)}</small><strong>${o?escapeHTML(o.name):'—'}</strong></div>`;}).join('');}
 // v0.3 story engine: discrete moments, never a single threshold hiding other effects.
@@ -380,12 +420,25 @@ function playState(){
   if(priority!=='leave'&&home.status==='helped')home=verdict('fragile','Departure capability remains a future commitment',home.detail+' The complete follow-through workflow is not yet operational.','A future capability does not automatically deliver day-one value.');
   // An independent specialist must accept a new referral. Sharing a campus is not shared governance.
   let partner;
-  if(registration==='central')partner=verdict('hurt','One welcome, a second organization','The common desk has prepared Arthur, but the independent specialist still needs separate registration and has not accepted the urgent referral.','Central registration cannot promise an independent provider’s capacity or consent process.');
+  if(registration==='central')partner=verdict('fragile','One welcome, a second organization','The common desk has prepared Arthur, but the independent specialist still needs separate registration and has not accepted the urgent referral.','Central registration cannot promise an independent provider’s capacity or consent process.');
   else if(registration==='department')partner=verdict('fragile','Separate desks, separate systems','The partner can manage its own intake, but Arthur repeats details and needs a tracked cross-organization handoff.','Local autonomy preserves service control at the expense of journey continuity.');
   else partner=verdict('fragile','Shared welcome, negotiated boundaries','The federated welcome shares routing and permitted status information, but the specialist must still confirm acceptance under a partner agreement.','A federated model needs ongoing governance and clear exceptions; it is not automatically seamless.');
   if(registration==='federated'&&priority==='care')partner=verdict('helped','The independent partner accepts the handoff','A prepared cross-provider workflow confirms the specialist’s acceptance while the partner retains its own intake and governance.','A shared welcome succeeds only when cross-organization acceptance and escalation are operational.');
   if(registration==='department'&&priority==='care')partner=verdict('helped','A manual but owned partner handoff','The specialist completes local intake, while an accountable coordinator verifies acceptance and updates Arthur’s pathway.','Coordinated handoffs can work without one registration system, but require staff time.');
   if(registration==='central'&&priority==='care')partner=verdict('fragile','The second registration is actively managed','The independent provider retains separate requirements, but a named coordinator confirms intake and appointment acceptance.','A centralized welcome can be effective without pretending to control partner systems.');
+  // The three watershed choices determine whether envisioned capabilities have the operating model to support them.
+  const wc=state.watersheds.care,wr=state.watersheds.leave;
+  if(wc==='local' && clinical.status==='helped')clinical=verdict('fragile','Shared places, separate decision rights','Arthur benefits from the connected spaces, but each diagnostic service still controls its own capacity.','Co-location does not remove the need for an agreed scheduling owner.');
+  if(wc==='local' && ops.status==='helped')ops=verdict('fragile','Capacity exists, coordination is local','Departments may negotiate changes, but no one has campus-wide reallocation authority.','Preserving local authority demands disciplined handoffs.');
+  if((wc==='coordinator'||wc==='shared') && priority==='care' && ops.status==='hurt')ops=verdict('fragile','A coordinator brokers the next step','A named coordinator negotiates a change, but capacity and clinical approvals are still limited.','Visibility plus an escalation owner can reduce delay without inventing extra slots.');
+  if(wc==='shared' && priority==='care' && ops.status==='fragile')ops=verdict('helped','A clinical and operational team acts','The team has an agreed mechanism to safely review the sequence and reassign available capacity.','Clinical judgment and operational scheduling must be jointly accountable.');
+  if(wr==='fixed' && ops.status==='helped')ops=verdict('fragile','Specialized capacity needs careful transfers',ops.detail+' Dedicated settings still need explicit transfer and surge procedures.','Specialized rooms are valuable but not infinitely adaptable.');
+  if(wr==='flex' && priority==='leave' && home.status==='fragile')home=verdict('helped','Recovery adapts to his needs','Compatible observation capacity and a staffed recovery plan give Arthur more time when necessary.','Flexibility requires staffing, monitoring, cleaning and infection-prevention provisions.');
+  if(wr==='response' && ops.status==='hurt')ops=verdict('fragile','A campus response is activated','Clinical and operations leaders see the pressure and assign an owner, though no additional clinical capacity is created.','The coordination function is authority and action, not just a dashboard.');
+  if(state.reserveApplied && reserveAvailable()){
+    if(ops.status==='hurt')ops=verdict('fragile','Reserve supports a manual recovery','Available change and operations capacity supports a temporary coordinator and approved schedule recovery.','Uncommitted capacity can support exceptions, not substitute for clinical resources.');
+    else if(partner.status==='fragile')partner=verdict('helped','Reserve supports an owned partner handoff','A temporary navigator confirms the external provider’s acceptance and communicates the new itinerary.','Use the reserve to close an accountable handoff, subject to partner acceptance.');
+  }
   const moments=[{key:'arrival',...access},{key:'clinical',...clinical},{key:'ops',...ops},{key:'partner',...partner},{key:'home',...home}];
   const counts={helped:0,fragile:0,hurt:0};moments.forEach(m=>counts[m.status]++);
   const headline=counts.hurt>=2?'Several connections fail under pressure':counts.hurt===1?'One critical connection breaks':counts.fragile>=3?'The journey works, but depends on extra effort':'A connected journey with visible dependencies';
@@ -399,9 +452,10 @@ function disruption(){
   app.innerHTML=shell(`<section class="disruption"><div class="stage">Disruption · Part 1 of 2</div><h2>Arthur’s plan changes.</h2><p>Imaging identifies an unexpected finding. Arthur needs an additional diagnostic step and review from an independent specialist working on the same campus. The specialist is not operated by Covenant Health and has separate intake and referral acceptance rules.</p><p><strong>Opening-day priority:</strong> ${escapeHTML(GAME.decisions.find(x=>x.id===state.readiness.priority).title)} · <strong>Registration:</strong> ${escapeHTML(REGISTRATION[state.readiness.registration].name)}</p><div class="choice-summary">${summary()}</div><div class="reveal-on-dark">${momentCard(p.moments[1])}${momentCard(p.moments[3])}</div><p class="subtle-on-dark">The question is not only whether the information travels—but whether someone can accept and reorganize the next step.</p><div class="actions"><button class="primary" data-action="next-beat">Continue: pressure builds</button><button class="secondary" data-action="back" data-step="3">Revisit departure decision</button></div></section>`,4);
 }
 function pressure(){
-  if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
-  const p=playState();
-  app.innerHTML=shell(`<section class="disruption"><div class="stage">Disruption · Part 2 of 2</div><h2>Now the clock matters.</h2><p>Diagnostics are 45 minutes behind. Arthur has been fasting. The procedure opening is limited, his support person is temporarily away, and pharmacy closes soon.</p><div class="reveal-on-dark">${momentCard(p.moments[2])}</div><p class="subtle-on-dark">What the campus can <em>see</em> is different from what it has the authority and capacity to <em>change</em>.</p><div class="actions"><button class="primary" data-action="resolve">See Arthur’s full outcome</button><button class="secondary" data-action="back-beat">Back to the changed clinical plan</button></div></section>`,4);
+ if(ids().length!==3||!state.readiness){state.screen='readiness';save();return render();}
+ const p=playState(),available=reserveAvailable();
+ const t=totals(),b=GAME.budgets;
+ app.innerHTML=shell(`<section class="disruption pressure-compact"><div class="stage">DISRUPTION · 2 OF 2</div><h2>Demand rises. Arthur’s plan changes.</h2><p class="pressure-lede">Imaging runs 45 minutes behind as urgent-care demand increases. Higher-acuity needs require assessment and possible escalation or transfer; scheduled care still needs protected routes and infection-prevention provisions.</p><div class="pressure-grid"><div class="pressure-status"><strong>What your model does</strong>${momentCard(p.moments[2])}</div><div class="reserve-panel"><span class="watershed-caption">YOUR RESOURCE TRADE-OFF</span><h3>${available?'You kept some response capacity.':'Your opening-day resources are committed.'}</h3><p>${available?'You can use remaining Change and Operations capacity for a limited, accountable response. It cannot create a diagnostic room or override clinical judgment.':'You can still escalate using existing workflows, but there is no uncommitted change-and-operations reserve to deploy.'}</p>${available?`<div class="actions"><button class="${state.reserveApplied?'secondary':'primary'}" data-action="reserve-toggle">${state.reserveApplied?'✓ Response reserve activated · Undo':'Activate limited response reserve →'}</button></div>`:''}<small>${state.reserveApplied?`Reserve deployed: 1 Change + 1 Operations unit · Remaining available: Change ${b.change-t.change-1}, Operations ${b.operations-t.operations-1}`:`Change ${b.change-t.change} left · Operations ${b.operations-t.operations} left`}</small></div></div><div class="actions"><button class="primary" data-action="resolve">See the implications for Arthur →</button><button class="secondary" data-action="back-beat">Back to Arthur’s changed plan</button></div></section>`,4);
 }
 function designOutput(){
  const a=state.choices.arrival,c=state.choices.care,l=state.choices.leave;
@@ -421,6 +475,14 @@ function designOutput(){
   c==='comes'?'Plan resilient wireless coverage, device charging, mobility standards and operational support.':c==='core'?'Plan resilient shared infrastructure, common room standards and diagnostic integration.':'Plan shared workflow standards and reliable connectivity across service boundaries.',
   l==='wellness'?'Agree partner integration, privacy, consent and follow-up accountability before selecting products.':'Preserve the ability to change pathways and operations without rebuilding the clinical environment.'
  ]};
+}
+function watershedDesignNotes(){
+ const a=state.watersheds.arrival,c=state.watersheds.care,l=state.watersheds.leave;
+ return [
+  `THREE BUILDINGS: ${WATERSHEDS.arrival.options.find(o=>o.id===a)?.design||'Define a campus welcome.'}`,
+  `STAFF / CAPACITY: ${WATERSHEDS.care.options.find(o=>o.id===c)?.design||'Define an operational owner.'}`,
+  `ADAPTABILITY / INFECTION PREVENTION: ${WATERSHEDS.leave.options.find(o=>o.id===l)?.design||'Plan protected care and transfer routes.'}`
+ ];
 }
 function implications(title,items){return `<section class="implication"><h3>${escapeHTML(title)}</h3><ul>${items.map(v=>`<li>${escapeHTML(v)}</li>`).join('')}</ul></section>`;}
 // The design/operations lens sits between Arthur's disruption and the final vision.
@@ -454,9 +516,7 @@ function lensScreen(){
  if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
  const d=designOutput(),tab=state.lensTab==='design'?'design':'operations';
  const values=tab==='operations'?d.operations:d.place;
- const title=tab==='operations'?'Who makes this model work?':'What must the place make possible?';
- const context=tab==='operations'?'Operational success depends on roles, authority, capacity and coordination—not just choosing a service model.':'The choices imply different adjacencies, circulation, support spaces, room flexibility and infrastructure.';
- app.innerHTML=shell(`<section class="panel"><div class="stage">The Design & Operations Lens · 1 of 2</div><h2>Your design worked. But what did it require?</h2><p class="lede">Arthur’s changed pathway revealed the consequences. Now look beneath the experience to the commitments that would make your future possible.</p><div class="choice-summary">${summary()}</div>${selectedFutureStrip()}<div class="lens-tabs" role="group" aria-label="Choose a lens"><button class="${tab==='operations'?'active':''}" data-action="lens-tab" data-tab="operations" aria-pressed="${tab==='operations'}">Operations</button><button class="${tab==='design'?'active':''}" data-action="lens-tab" data-tab="design" aria-pressed="${tab==='design'}">Design</button></div><h3 class="lens-heading">${title}</h3><p class="lede">${context}</p><div class="lens-cards">${values.slice(0,3).map((v,i)=>`<article class="lens-card"><div class="stage">${['Arrival','Care model','Departure'][i]}</div><h3>${escapeHTML(option(state.choices[GAME.decisions[i].id]).name)}</h3><p>${escapeHTML(v)}</p></article>`).join('')}</div><section class="lens-support"><h3>Opening-day trade-offs and partner boundary</h3><p><strong>Operational now:</strong> ${escapeHTML(option(state.choices[state.readiness.priority]).name)}. The two other models are design directions, not fully operational promises.</p><p><strong>${escapeHTML(REGISTRATION[state.readiness.registration].name)}:</strong> ${escapeHTML(tab==='operations'?REGISTRATION[state.readiness.registration].ops:REGISTRATION[state.readiness.registration].place)}</p><p><strong>Unresolved dependency:</strong> an independent specialist must accept the referral; a shared campus does not convey shared clinical or scheduling authority.</p></section><section class="lens-support"><h3>${tab==='operations'?'What information must support action?':'What should remain resilient and adaptable?'}</h3><ul>${(tab==='operations'?d.information:d.foundation).map(v=>`<li>${escapeHTML(v)}</li>`).join('')}</ul></section><p class="decision-prompt">These are <strong>visioning implications</strong>, not confirmed ACHC service policies, room requirements or technology selections.</p><div class="actions"><button class="primary" data-action="go-commit">Choose a design commitment</button><button class="secondary" data-action="lens-back">Back to Arthur’s disruption</button></div></section>`,5);
+ app.innerHTML=shell(`<section class="panel v15-lens"><div class="stage">DESIGN & OPERATIONS · YOUR FUTURE CAMPUS</div><h2>What must ACHC make possible?</h2><p class="lede">Your three investments each helped Arthur. Here is what your chosen operating model demands.</p><div class="lens-tabs" role="group" aria-label="Choose a lens"><button class="${tab==='operations'?'active':''}" data-action="lens-tab" data-tab="operations" aria-pressed="${tab==='operations'}">Operations & staffing</button><button class="${tab==='design'?'active':''}" data-action="lens-tab" data-tab="design" aria-pressed="${tab==='design'}">Place & engineering</button></div><div class="v15-lens-grid">${values.slice(0,3).map((v,i)=>`<article class="v15-lens-tile"><span>${['01 · Welcome','02 · Connected care','03 · Flexible response'][i]}</span><strong>${escapeHTML(option(state.choices[GAME.decisions[i].id]).name)}</strong><p>${escapeHTML(v)}</p></article>`).join('')}</div><div class="v15-lens-aha"><span class="watershed-caption">YOUR DESIGN MOMENTS</span>${watershedDesignNotes().map(x=>`<p>✓ ${escapeHTML(x)}</p>`).join('')}</div><details class="impact-v14-more"><summary>Explore partner rules, infrastructure and further design requirements</summary><div class="impact-v14-extra"><p><b>${escapeHTML(REGISTRATION[state.readiness.registration].name)}:</b> ${escapeHTML(tab==='operations'?REGISTRATION[state.readiness.registration].ops:REGISTRATION[state.readiness.registration].place)}</p><ul>${(tab==='operations'?d.information:d.foundation).map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul><p>An independent specialist must explicitly accept Arthur's referral. These implications are design questions, not an approved ACHC clinical or building specification.</p>${selectedFutureStrip()}</div></details><div class="actions"><button class="primary" data-action="go-commit">Choose a design commitment →</button><button class="secondary" data-action="lens-back">Back to Arthur’s disruption</button></div></section>`,5);
 }
 function commitmentScreen(){
  if(ids().length!==3||!state.readiness){state.screen=ids().length!==3?'d3':'readiness';save();return render();}
@@ -484,7 +544,7 @@ function result(){
  if(!state.commitment){state.screen='commit';save();return render();}
  const prime=option(state.choices[state.readiness.priority]);const aha=strategicAha();const limits=foregoneFutures();const t=totals(),b=GAME.budgets;
  const icons={arrival:'⌖',care:'◉',leave:'↗'};
- app.innerHTML=shell(`<section class="panel v12-result"><div class="stage">YOUR ACHC FUTURE · SCREEN 1 OF 2</div><h2>What your investments created.</h2><p class="lede">Three meaningful investments. One operational priority at opening. The others still have future value.</p><div class="v12-strategy-grid">${GAME.decisions.map(d=>{const o=option(state.choices[d.id]);const ready=d.id===state.readiness.priority;return `<article class="strategy-tile ${ready?'ready-now':'later-phase'}">${investmentScene(o.id,'card')}<div class="strategy-tile-body"><span class="strategy-phase">${ready?'✓ OPENING DAY':'↗ FUTURE VALUE'}</span><h3>${escapeHTML(o.name)}</h3><p>${escapeHTML(ready?INVESTMENT_STORIES[o.id].opening:INVESTMENT_STORIES[o.id].future)}</p></div></article>`;}).join('')}</div><div class="v12-aha"><div class="aha-label">THE AHA · BECAUSE YOU CHOSE THIS...</div><h3>${escapeHTML(aha.headline)}</h3><p>${limits.length?`${escapeHTML(limits[0].option.name)} cannot also fit this opening-day portfolio. Its potential remains available in a future phase.`:`Your other investments can support the building’s future, but are not all operational on day one.`}</p></div><div class="v12-resource-line">Capital ${t.capital}/${b.capital} · Change ${t.change}/${b.change} · Operations ${t.operations}/${b.operations}<span> · ${escapeHTML(REGISTRATION[state.readiness.registration].name)}</span></div><div class="actions"><button class="primary" data-action="view-journey">See what Arthur experienced →</button><button class="secondary" data-action="edit-readiness">Reconsider opening-day priority</button></div></section>`,5);
+ app.innerHTML=shell(`<section class="panel v12-result"><div class="stage">YOUR ACHC FUTURE · SCREEN 1 OF 2</div><h2>What your investments created.</h2><p class="lede">Three meaningful investments. One operational priority at opening. The others still have future value.</p><div class="v12-strategy-grid">${GAME.decisions.map(d=>{const o=option(state.choices[d.id]);const ready=d.id===state.readiness.priority;return `<article class="strategy-tile ${ready?'ready-now':'later-phase'}">${investmentScene(o.id,'card')}<div class="strategy-tile-body"><span class="strategy-phase">${ready?'✓ OPENING DAY':'↗ FUTURE VALUE'}</span><h3>${escapeHTML(o.name)}</h3><p>${escapeHTML(ready?INVESTMENT_STORIES[o.id].opening:INVESTMENT_STORIES[o.id].future)}</p></div></article>`;}).join('')}</div><div class="v12-aha"><div class="aha-label">THE AHA · BECAUSE YOU CHOSE THIS...</div><h3>${escapeHTML(aha.headline)}</h3><p>${limits.length?`${escapeHTML(limits[0].option.name)} cannot also fit this opening-day portfolio. Its potential remains available in a future phase.`:`Your other investments can support the building’s future, but are not all operational on day one.`}</p></div><div class="v12-resource-line">${state.reserveApplied?'Response reserve: 1 Change + 1 Operations allocated · ':''}Capital ${t.capital}/${b.capital} · Change ${t.change}/${b.change} · Operations ${t.operations}/${b.operations}<span> · ${escapeHTML(REGISTRATION[state.readiness.registration].name)}</span></div><div class="actions"><button class="primary" data-action="view-journey">See what Arthur experienced →</button><button class="secondary" data-action="edit-readiness">Reconsider opening-day priority</button></div></section>`,5);
 }
 const JOURNEY_IMAGES=['access-0.webp','connected-1.webp','operations-1.webp','distributed-2.webp','adapt-1.webp'];
 function journeyResult(){
@@ -505,6 +565,7 @@ function copyBrief(){
  const p=playState(),d=designOutput();const lines=[`Arthur · Care Well — ${CFG.gameVersion||'v0.6'}`, ...GAME.decisions.map(x=>`${x.title}: ${option(state.choices[x.id]).name}`),`Operational at opening: ${option(state.strengthened).name}`,`Registration: ${REGISTRATION[state.readiness.registration].name}`,`Registration trade-off: ${REGISTRATION[state.readiness.registration].cost}`,'',...p.moments.map(m=>`${m.key.toUpperCase()} — ${m.status}: ${m.title}. ${m.detail} Design insight: ${m.why}`),'',...Object.entries(d).flatMap(([k,v])=>[k.toUpperCase(),...v.map(x=>`- ${x}`),''])];
  const selected=state.commitment?commitmentOptions().find(x=>x.id===state.commitment.id):null;
  if(selected)lines.push('ACHC COMMITMENT',selected.title,selected.detail,'Category: '+({enable:'Enable now',coordinate:'Coordinate across services',preserve:'Preserve for the future'}[state.commitment.category]),'Operations: '+selected.operations,'Place: '+selected.place);
+ lines.push('', 'WATERSHED DESIGN IMPLICATIONS',...watershedDesignNotes().map(x=>'- '+x),`Reserve used: ${state.reserveApplied?'Yes':'No'}`);
  const value=lines.join('\n');
  const msg=document.getElementById('msg');
  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(value).then(()=>{if(msg)msg.textContent='Design brief copied.'}).catch(()=>{if(msg)msg.textContent='Clipboard permission unavailable. Select the brief text to copy.'});}
@@ -538,6 +599,10 @@ app.addEventListener('click',e=>{
     case 'choose':choose(btn.dataset.decision,btn.dataset.option);break;
     case 'continue-impact':continueImpact(Number(btn.dataset.step));break;
     case 'continue-reveal':continueReveal(Number(btn.dataset.step));break;
+    case 'watershed-select':watershedSelect(btn.dataset.stage,btn.dataset.value);break;
+    case 'watershed-confirm':watershedConfirm(Number(btn.dataset.step));break;
+    case 'watershed-back':watershedBack(Number(btn.dataset.step));break;
+    case 'reserve-toggle':if(reserveAvailable()){state.reserveApplied=!state.reserveApplied;event('reserve_changed',{active:state.reserveApplied});render();}break;
     case 'return-impact':state.screen=`impact${Number(btn.dataset.step)}`;save();render();break;
     case 'back':back(Number(btn.dataset.step));break;
     case 'set-readiness':setReadiness();break;
