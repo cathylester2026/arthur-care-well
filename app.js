@@ -18,12 +18,12 @@ const GAME={
  {id:'wellness',letter:'C',name:'Connected Wellness',tag:'Use the procedure as the beginning of Arthur’s next care plan.',creates:['Confirmed follow-up','Connected medication and recovery','Continued support'],requires:['Wellness navigation','Virtual care','Named follow-up ownership'],risk:'A referral is not continuity unless capacity and ownership exist.',cost:[2,3,3],impact:[3,3,2,2,2,3],strength:'Closed-Loop Wellness',boost:[0,0,0,1,1,0]}]}],
  synergies:[['digital','network',1,1],['digital','core',0,1],['legible','core',2,1],['human','network',3,1],['human','comes',0,1],['core','adaptive',4,1],['comes','adaptive',2,1],['network','wellness',5,1],['core','wellness',1,1],['human','wellness',5,1]]
 };
-const STORAGE_KEY = 'arthur-care-well-v18';
+const STORAGE_KEY = 'arthur-care-well-v19';
 const OLD_KEY = 'arthur-care-well';
-const SCREEN_ORDER = ['intro','campus','arthur','baseline','howto','launch','d1','d2','d3','impact1','impact2','impact3','reveal1','reveal2','reveal3','watershed1','watershed2','watershed3','shift1','shift2','shift3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
+const SCREEN_ORDER = ['intro','campus','arthur','baseline','howto','launch','d1','d2','d3','impact1','impact2','impact3','tradeoff','reveal1','reveal2','reveal3','watershed1','watershed2','watershed3','shift1','shift2','shift3','readiness','disruption','pressure','lens','commit','result','journeyResult'];
 const app = document.getElementById('app');
 const newId = () => (window.crypto && typeof crypto.randomUUID==='function') ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const fresh = () => ({screen:'intro', helpReturn:null, baselineStep:0, choices:{}, watersheds:{}, reserveApplied:false, strengthened:null, readiness:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null, journeyStep:0});
+const fresh = () => ({screen:'intro', helpReturn:null, baselineStep:0, choices:{}, watersheds:{}, tradeoff:null, reserveApplied:false, strengthened:null, readiness:null, startedAt:null, sessionId:newId(), events:[], completed:false, lensTab:'operations', commitment:null, journeyStep:0});
 function load() {
  try {
   const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return null;
@@ -38,6 +38,7 @@ function load() {
   if(['arrival','care','leave'].includes(saved.readiness?.priority) && next.watersheds.arrival)
     next.readiness={registration:next.watersheds.arrival,priority:saved.readiness.priority};
   next.reserveApplied=Boolean(saved.reserveApplied)&&next.readiness!==null;
+  if(saved.tradeoff && Number.isInteger(saved.tradeoff.step) && saved.tradeoff.step>=2 && saved.tradeoff.step<=3 && Array.isArray(saved.tradeoff.lost) && saved.tradeoff.lost.every(k=>['arrival','care'].includes(k)))next.tradeoff={step:saved.tradeoff.step,lost:saved.tradeoff.lost.filter(k=>next.watersheds[k])};
   if(next.readiness)next.strengthened=next.choices[next.readiness.priority]||null;
   if(SCREEN_ORDER.includes(saved.screen))next.screen=saved.screen;
   if(typeof saved.startedAt==='string')next.startedAt=saved.startedAt;
@@ -51,12 +52,14 @@ function load() {
   const progress=ids(next.choices).length;
   if(progress===0 && !['intro','campus','arthur','baseline','howto','launch','d1'].includes(next.screen))next.screen='d1';
   else if(progress===1 && !['intro','d1','impact1','reveal1','watershed1','shift1','d2'].includes(next.screen))next.screen='impact1';
-  else if(progress===2 && !['intro','d1','impact1','reveal1','watershed1','shift1','d2','impact2','reveal2','watershed2','shift2','d3'].includes(next.screen))next.screen='impact2';
+  else if(progress===2 && !['intro','d1','impact1','reveal1','watershed1','shift1','d2','impact2','tradeoff','reveal2','watershed2','shift2','d3'].includes(next.screen))next.screen='impact2';
   else if(progress===3 && ['disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen) && !next.readiness)next.screen='readiness';
   if(progress>=1 && !next.watersheds.arrival && ['d2','impact2','reveal2','watershed2','shift2','d3','impact3','reveal3','watershed3','shift3','readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed1';
   else if(progress>=2 && !next.watersheds.care && ['d3','impact3','reveal3','watershed3','shift3','readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed2';
   else if(progress>=3 && !next.watersheds.leave && ['readiness','disruption','pressure','lens','commit','result','journeyResult'].includes(next.screen))next.screen='watershed3';
   if(/^shift[1-3]$/.test(next.screen)){const n=Number(next.screen.slice(5));const key=GAME.decisions[n-1].id;if(!next.watersheds[key])next.screen=`watershed${n}`;}
+  if(next.screen==='tradeoff' && (!next.tradeoff?.lost?.length || !next.choices[GAME.decisions[next.tradeoff.step-1].id]))next.screen='impact2';
+  if(next.reserveApplied){const selected=next;const previous=state;state=selected;const valid=reserveAvailable() && reserveWouldHelp();state=previous;if(!valid)next.reserveApplied=false;}
   if(['result','journeyResult'].includes(next.screen)&&!next.commitment)next.screen='commit';
   next.completed=['result','journeyResult'].includes(next.screen);return next;
  } catch(err){console.warn('Saved game could not be restored',err);return null;}
@@ -148,7 +151,7 @@ const CHAPTERS=[
  {name:'Meet ACHC & Arthur',short:'Meet',icon:'⌂',screens:['intro','campus','arthur']},
  {name:'Arthur’s baseline',short:'Baseline',icon:'①',screens:['baseline']},
  {name:'Learn to play',short:'Learn',icon:'?',screens:['howto','launch']},
- {name:'Investments & watershed choices',short:'Invest',icon:'◆',screens:['d1','impact1','reveal1','watershed1','shift1','d2','impact2','reveal2','watershed2','shift2','d3','impact3','reveal3','watershed3','shift3']},
+ {name:'Investments & watershed choices',short:'Invest',icon:'◆',screens:['d1','impact1','reveal1','watershed1','shift1','d2','impact2','tradeoff','reveal2','watershed2','shift2','d3','impact3','reveal3','watershed3','shift3']},
  {name:'Opening-day choices',short:'Opening',icon:'◷',screens:['readiness']},
  {name:'Arthur’s changed day',short:'Change',icon:'↝',screens:['disruption','pressure']},
  {name:'Design & results',short:'Design',icon:'✓',screens:['lens','commit','result','journeyResult']}
@@ -167,6 +170,7 @@ function render(){
   if(state.screen==='howto')return howToScreen();
   if(state.screen==='launch')return launchScreen();
   if(state.screen==='readiness')return readinessScreen();
+  if(state.screen==='tradeoff')return tradeoffScreen();
   if(/^watershed[1-3]$/.test(state.screen))return watershedScreen(Number(state.screen.slice(9)));
   if(/^shift[1-3]$/.test(state.screen))return designShiftScreen(Number(state.screen.slice(5)));
   if(/^impact[1-3]$/.test(state.screen))return investmentImpact(Number(state.screen.slice(6)));
@@ -240,10 +244,15 @@ function decision(n){
 function choose(did,oid){
   if(!optionAvailable(did,oid)){const msg=document.getElementById('msg');if(msg)msg.textContent='This choice would prevent a complete visit within the resource budget. Revise your earlier choices.';return;}
   const n=GAME.decisions.findIndex(d=>d.id===did)+1;
+  // Compare current feasibility with the result after committing the new investment.
+  // This catches the exact moment an earlier operating-model option becomes phased.
+  const previouslyFeasible=GAME.decisions.slice(0,n-1).filter(d=>state.watersheds[d.id] && modelCanActivate(d.id)).map(d=>d.id);
   for(let i=n;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
-  state.readiness=null;state.strengthened=null;state.reserveApplied=false;
+  state.readiness=null;state.tradeoff=null;state.strengthened=null;state.reserveApplied=false;
   const order=['arrival','care','leave'];for(let i=order.indexOf(did);i<order.length;i++)delete state.watersheds[order[i]];
   state.choices[did]=oid;
+  const lost=previouslyFeasible.filter(k=>!modelCanActivate(k));
+  state.tradeoff=lost.length ? {step:n,lost} : null;
   state.completed=false;state.commitment=null;
   state.screen=`impact${n}`;
   event('decision_selected',{decision:did,option:oid});render();
@@ -357,12 +366,33 @@ function investmentReveal(n){
  app.innerHTML=shell(`<section class="panel arthur-reveal"><div class="stage">Decision ${n} · Arthur’s reveal · 2 of 2</div><h2>${escapeHTML(r.title)}</h2><p class="lede">${escapeHTML(r.step)} · A glimpse of what your investment makes possible</p><div class="reveal-layout"><div class="reveal-scene">${investmentScene(id,'hero')}<div class="reveal-speech">${escapeHTML(r.voice)}</div></div><div class="reveal-content"><div class="reveal-story">${escapeHTML(r.moment)}</div><div class="reveal-gain"><strong>✓ Your investment helps</strong><p>${escapeHTML(r.gain)}</p></div><div class="reveal-limit"><strong>↔ What it still needs</strong><p>${escapeHTML(r.limit)}</p></div></div></div><div class="reveal-insight"><strong>Design insight</strong><span>${escapeHTML(r.insight)}</span>${momentLinkForChoice(d.id,id)}</div><p class="reveal-footnote">This is the value of the chosen future. You will decide what can be fully operational at opening after all three investments.</p><div class="actions"><button class="primary" data-action="continue-reveal" data-step="${n}">${n===3?'Choose what goes live at opening →':'Continue to decision '+(n+1)+' →'}</button><button class="secondary" data-action="return-impact" data-step="${n}">Back to investment impact</button></div></section>`,n);
 }
 
-function continueImpact(n){if(n<1||n>3||!state.choices[GAME.decisions[n-1].id])return;state.screen=`reveal${n}`;save();render();}
+const TRADEOFF_SCENES={
+ arrival:{headline:'Arthur has a clearer arrival—but the next change may need manual help.',moment:'The front door and planned journey still improve. When Arthur’s lab or imaging time shifts, the full arrival operating model may need a navigator or a later-phase integration.',design:'Preserve wayfinding, a staffed exception point and access to live service information.'},
+ care:{headline:'Arthur can move through a better diagnostic environment—but the schedule may not move with him.',moment:'The diagnostic investment improves the spaces and handoffs. If imaging runs late, the shared scheduling authority planned earlier is no longer funded for opening day.',design:'Protect shared clinical touchpoints and communications even if a coordinated booking function is phased.'}
+};
+function tradeoffScreen(){
+ const t=state.tradeoff;
+ if(!t||!t.lost?.length){state.screen=`reveal${t?.step||2}`;save();return render();}
+ const newly=option(state.choices[GAME.decisions[t.step-1].id]);
+ const choices=t.lost.map(k=>({stage:k,model:WATERSHEDS[k].options.find(x=>x.id===state.watersheds[k]),scene:TRADEOFF_SCENES[k]})).filter(x=>x.model);
+ const keyMoment=choices.find(x=>x.stage==='care')||choices[0];
+ const short=choices.map(x=>x.model.title).join(' and ');
+ app.innerHTML=shell(`<section class="panel tradeoff-reveal" aria-labelledby="tradeoff-title">
+ <div class="stage">INVESTMENT ${t.step} · CONSEQUENCE · THE FUTURE SHIFTS</div>
+ <h2 id="tradeoff-title">Arthur gains something. Another promise must wait.</h2>
+ <p class="lede">Your investment in <strong>${escapeHTML(newly.name)}</strong> helps Arthur. But its costs change what ACHC can operate at opening.</p>
+ <div class="tradeoff-two"><article class="tradeoff-gain"><span>✓ WHAT YOU GAINED</span><h3>${escapeHTML(newly.name)}</h3><p>${escapeHTML(INVESTMENT_STORIES[newly.id].gain)}</p></article><article class="tradeoff-phase"><span>↗ WHAT CHANGED AT OPENING</span><h3>${escapeHTML(short)}</h3><p>Previously affordable. Now phased by the resources this investment uses. The design can still be protected.</p></article></div>
+ <div class="tradeoff-arthur"><div class="tradeoff-symbol">A</div><div><span>WHAT ARTHUR MAY EXPERIENCE AT OPENING</span><p><strong>${escapeHTML(keyMoment.scene.headline)}</strong> ${escapeHTML(keyMoment.scene.moment)}</p></div></div>
+ <div class="tradeoff-takeaway"><b>DESIGN AHA</b><span>You designed the connection. You have not yet funded every coordination step needed to operate it at opening.</span></div>
+ <details class="tradeoff-details"><summary>What must ACHC preserve for a later phase?</summary>${choices.map(x=>`<p><b>${escapeHTML(x.model.title)}:</b> ${escapeHTML(x.scene.design)}</p>`).join('')}</details>
+ <div class="actions"><button class="primary" data-action="tradeoff-next">Continue to Arthur’s reveal →</button><button class="secondary" data-action="tradeoff-reconsider">Reconsider this investment</button></div></section>`,t.step);
+}
+function continueImpact(n){if(n<1||n>3||!state.choices[GAME.decisions[n-1].id])return;state.screen=state.tradeoff?.step===n && state.tradeoff.lost.length?'tradeoff':`reveal${n}`;save();render();}
 function continueReveal(n){if(n<1||n>3||!state.choices[GAME.decisions[n-1].id])return;state.screen=`watershed${n}`;save();render();}
 function back(n){
  if(n<1||n>3)return;
  for(let i=n-1;i<GAME.decisions.length;i++)delete state.choices[GAME.decisions[i].id];
- state.readiness=null;state.strengthened=null;state.completed=false;state.commitment=null;state.reserveApplied=false;for(let i=n-1;i<3;i++)delete state.watersheds[GAME.decisions[i].id];
+ state.readiness=null;state.tradeoff=null;state.strengthened=null;state.completed=false;state.commitment=null;state.reserveApplied=false;for(let i=n-1;i<3;i++)delete state.watersheds[GAME.decisions[i].id];
  state.screen=`d${n}`;save();render();
 }
 const REGISTRATION={
@@ -430,7 +460,7 @@ function designShiftScreen(n){
  <div class="shift-impact"><span class="shift-icon">♧</span><div><strong>Operations & staffing</strong><p>${escapeHTML(s.ops)}</p></div></div>
  <div class="shift-impact"><span class="shift-icon">▣</span><div><strong>Engineering & digital</strong><p>${escapeHTML(s.eng)}</p></div></div>
  </div></div>
- ${(()=>{const m=modelReadinessNote(stage);const committed=totals(),b=GAME.budgets;const insufficient=RESOURCE_NAMES.filter((k,i)=>committed[k]+m.req[i]>b[k]);return `<div class="shift-readiness ${m.can?'ready':'phased'}"><span class="shift-readiness-title">${m.can?'✓ Can be activated at opening—if prioritized':'↗ Future design enabled; full operation must be phased'}</span><span>${m.can?`Operating commitment: ${m.label}. This would use some of your remaining capacity.`:`Not enough ${insufficient.join(' and ')} capacity to activate this full model now. The spatial and technology design can still be protected.`}</span><small>${m.can?'Opening-day selection is made after your three investments.':'Your investment still creates value; this operating model needs later organizational readiness.'}</small></div>`;})()}
+ ${(()=>{const m=modelReadinessNote(stage);const committed=totals(),b=GAME.budgets;const insufficient=RESOURCE_NAMES.filter((k,i)=>committed[k]+m.req[i]>b[k]);return `<div class="shift-readiness ${m.can?'ready':'phased'}"><span class="shift-readiness-title">${m.can?'✓ Affordable now—if prioritized; later investments may change this':'↗ Future design enabled; full operation must be phased'}</span><span>${m.can?`Operating commitment: ${m.label}. This would use some of your remaining capacity.`:`Not enough ${insufficient.join(' and ')} capacity to activate this full model now. The spatial and technology design can still be protected.`}</span><small>${m.can?'Opening-day readiness is confirmed after all three investments; a later choice can use this capacity.':'Your investment still creates value; this operating model needs later organizational readiness.'}</small></div>`;})()}
  <div class="shift-arthur"><span class="shift-label">WHAT ARTHUR EXPERIENCES</span><strong>${escapeHTML(s.arthur)}</strong></div>
  <div class="shift-footer"><div class="shift-insight"><span>THE DESIGN AHA</span><b>${escapeHTML(s.insight)}</b></div><div class="actions"><button class="secondary" data-action="shift-back" data-step="${n}">← Reconsider this model</button><button class="primary" data-action="shift-next" data-step="${n}">${n===3?'Set opening-day priority →':`Continue to investment ${n+1} →`}</button></div></div>
  </section>`,n);
@@ -442,11 +472,21 @@ function shiftNext(n){
 }
 function shiftBack(n){state.screen=`watershed${n}`;save();render();}
 function watershedBack(n){state.screen=`reveal${n}`;save();render();}
-function reserveAvailable(){const t=resourceTotals(),b=GAME.budgets;return !state.reserveApplied && b.change-t.change>=1 && b.operations-t.operations>=1 || state.reserveApplied;}
+function reserveAvailable(){const t=resourceTotals(),b=GAME.budgets;return state.reserveApplied || (b.change-t.change>=1 && b.operations-t.operations>=1);}
+function reserveWouldHelp(){
+ if(!state.readiness)return false;
+ const before=state.reserveApplied;
+ state.reserveApplied=false;
+ let p;
+ try{p=playState();}finally{state.reserveApplied=before;}
+ return p.moments[2].status==='hurt' || p.moments[3].status==='fragile';
+}
+function usableReserve(){return reserveAvailable() && (state.reserveApplied || reserveWouldHelp());}
+
 function readinessScreen(){
  if(ids().length!==3 || !state.watersheds.arrival || !state.watersheds.care || !state.watersheds.leave){state.screen='watershed3';save();return render();}
  const ready=state.readiness||{};
- app.innerHTML=shell(`<section class="panel compact-readiness"><div class="stage">OPENING DAY · WHAT WILL BE READY?</div><h2>You cannot activate everything at opening.</h2><p class="lede">Each investment has value. Choose one to operate fully first; the others remain enabled for later.</p><div class="readiness-mini">${GAME.decisions.map(d=>{const o=option(state.choices[d.id]);return `<label class="priority-tile ${ready.priority===d.id?'selected':''}"><input type="radio" name="priority" value="${d.id}" ${ready.priority===d.id?'checked':''}><span class="priority-title">${o.name}</span><small>${modelCanActivate(d.id)?`Can activate operating model · ${modelRequirements(d.id).map((v,i)=>v?`${v} ${RESOURCE_NAMES[i]}`:'').filter(Boolean).join(' + ')||'No extra cost'}`:'Investment ready; operating model phased'}</small></label>`}).join('')}</div><div class="readiness-recap"><strong>Your operating-model choices</strong><span>Welcome: ${escapeHTML(WATERSHEDS.arrival.options.find(o=>o.id===state.watersheds.arrival).title)}</span><span>Care: ${escapeHTML(WATERSHEDS.care.options.find(o=>o.id===state.watersheds.care).title)}</span><span>Response: ${escapeHTML(WATERSHEDS.leave.options.find(o=>o.id===state.watersheds.leave).title)}</span></div><p class="readiness-note">Choose which investment to prioritize. The selected operating model activates only if your remaining resources cover its additional Change, Operations and infrastructure burden; otherwise the investment contributes its baseline value while the fuller model remains a future commitment.</p><div id="msg" class="error" role="status" aria-live="polite"></div><div class="actions"><button class="primary" data-action="set-readiness">Test the campus under pressure →</button><button class="secondary" data-action="watershed-back" data-step="3">Reconsider response model</button></div></section>`,4);
+ app.innerHTML=shell(`<section class="panel compact-readiness"><div class="stage">OPENING DAY · WHAT WILL BE READY?</div><h2>You cannot activate everything at opening.</h2><p class="lede">Each investment has value. Choose one to operate fully first; the others remain enabled for later.</p><div class="readiness-mini">${GAME.decisions.map(d=>{const o=option(state.choices[d.id]);return `<label class="priority-tile ${ready.priority===d.id?'selected':''}"><input type="radio" name="priority" value="${d.id}" ${ready.priority===d.id?'checked':''}><span class="priority-title">${o.name}</span><small>${modelCanActivate(d.id)?`Can activate operating model · ${modelRequirements(d.id).map((v,i)=>v?`${v} ${RESOURCE_NAMES[i]}`:'').filter(Boolean).join(' + ')||'No extra cost'}`:'Investment ready; operating model phased'}</small></label>`}).join('')}</div><div class="readiness-recap"><strong>Your operating-model choices</strong><span>Welcome: ${escapeHTML(WATERSHEDS.arrival.options.find(o=>o.id===state.watersheds.arrival).title)}</span><span>Care: ${escapeHTML(WATERSHEDS.care.options.find(o=>o.id===state.watersheds.care).title)}</span><span>Response: ${escapeHTML(WATERSHEDS.leave.options.find(o=>o.id===state.watersheds.leave).title)}</span></div><div class="readiness-guardrail"><strong>DESIGN DOES NOT EQUAL DAY-ONE OPERATIONS</strong><p>${GAME.decisions.map(d=>`${escapeHTML(option(state.choices[d.id]).name)}: ${modelCanActivate(d.id)?'Model currently affordable if selected':'Design value preserved; full operating model requires a later phase'}`).join(' · ')}</p></div><p class="readiness-note">Choose which investment to prioritize. The selected operating model activates only if your remaining resources cover its additional Change, Operations and infrastructure burden; otherwise the investment contributes its baseline value while the fuller model remains a future commitment.</p><div id="msg" class="error" role="status" aria-live="polite"></div><div class="actions"><button class="primary" data-action="set-readiness">Test the campus under pressure →</button><button class="secondary" data-action="watershed-back" data-step="3">Reconsider response model</button></div></section>`,4);
 }
 function setReadiness(){
  const p=document.querySelector('input[name="priority"]:checked')?.value;
@@ -537,9 +577,9 @@ function disruption(){
 }
 function pressure(){
  if(ids().length!==3||!state.readiness){state.screen='readiness';save();return render();}
- const p=playState(),available=reserveAvailable();
+ const p=playState(),available=usableReserve(),hasCapacity=reserveAvailable();
  const t=resourceTotals(),b=GAME.budgets;
- app.innerHTML=shell(`<section class="disruption pressure-compact"><div class="stage">DISRUPTION · 2 OF 2</div><h2>Demand rises. Arthur’s plan changes.</h2><p class="pressure-lede">Imaging runs 45 minutes behind as urgent-care demand increases. Higher-acuity needs require assessment and possible escalation or transfer; scheduled care still needs protected routes and infection-prevention provisions.</p><div class="pressure-grid"><div class="pressure-status"><strong>What your model does</strong>${momentCard(p.moments[2])}</div><div class="reserve-panel"><span class="watershed-caption">YOUR RESOURCE TRADE-OFF</span><h3>${available?'You kept some response capacity.':'Your opening-day resources are committed.'}</h3><p>${available?'You can use remaining Change and Operations capacity for a limited, accountable response. It cannot create a diagnostic room or override clinical judgment.':'You can still escalate using existing workflows, but there is no uncommitted change-and-operations reserve to deploy.'}</p>${available?`<div class="actions"><button class="${state.reserveApplied?'secondary':'primary'}" data-action="reserve-toggle">${state.reserveApplied?'✓ Response reserve activated · Undo':'Activate limited response reserve →'}</button></div>`:''}<small>${state.reserveApplied?`Reserve deployed: 1 Change + 1 Operations unit · Remaining available: Change ${b.change-t.change}, Operations ${b.operations-t.operations}`:`Change ${b.change-t.change} left · Operations ${b.operations-t.operations} left`}</small></div></div><div class="actions"><button class="primary" data-action="resolve">See the implications for Arthur →</button><button class="secondary" data-action="back-beat">Back to Arthur’s changed plan</button></div></section>`,4);
+ app.innerHTML=shell(`<section class="disruption pressure-compact"><div class="stage">DISRUPTION · 2 OF 2</div><h2>Demand rises. Arthur’s plan changes.</h2><p class="pressure-lede">Imaging runs 45 minutes behind as urgent-care demand increases. Higher-acuity needs require assessment and possible escalation or transfer; scheduled care still needs protected routes and infection-prevention provisions.</p><div class="pressure-grid"><div class="pressure-status"><strong>What your model does</strong>${momentCard(p.moments[2])}</div><div class="reserve-panel"><span class="watershed-caption">YOUR RESOURCE TRADE-OFF</span><h3>${available?'You can make a targeted response.':hasCapacity?'You preserved resources for a later pressure point.':'Your opening-day resources are committed.'}</h3><p>${available?'A reserve can improve an unresolved coordination or partner handoff here. It cannot create a diagnostic room or override clinical judgment.':hasCapacity?'There is no unresolved operational or partner gap that this particular reserve can improve. Keep your resources; nothing is deducted.':'You can still escalate using existing workflows, but there is no uncommitted change-and-operations reserve to deploy.'}</p>${available?`<div class="actions"><button class="${state.reserveApplied?'secondary':'primary'}" data-action="reserve-toggle">${state.reserveApplied?'✓ Response reserve activated · Undo':'Activate limited response reserve →'}</button></div>`:''}<small>${state.reserveApplied?`Reserve deployed: 1 Change + 1 Operations unit · Remaining available: Change ${b.change-t.change}, Operations ${b.operations-t.operations}`:`Change ${b.change-t.change} left · Operations ${b.operations-t.operations} left`}</small></div></div><div class="actions"><button class="primary" data-action="resolve">See the implications for Arthur →</button><button class="secondary" data-action="back-beat">Back to Arthur’s changed plan</button></div></section>`,4);
 }
 function designOutput(){
  const a=state.choices.arrival,c=state.choices.care,l=state.choices.leave;
@@ -649,6 +689,7 @@ function copyBrief(){
  const p=playState(),d=designOutput();const lines=[`Arthur · Care Well — ${CFG.gameVersion||'v0.6'}`, ...GAME.decisions.map(x=>`${x.title}: ${option(state.choices[x.id]).name}`),`Operational at opening: ${option(state.strengthened).name}`,`Registration: ${REGISTRATION[state.readiness.registration].name}`,`Registration trade-off: ${REGISTRATION[state.readiness.registration].cost}`,'',...p.moments.map(m=>`${m.key.toUpperCase()} — ${m.status}: ${m.title}. ${m.detail} Design insight: ${m.why}`),'',...Object.entries(d).flatMap(([k,v])=>[k.toUpperCase(),...v.map(x=>`- ${x}`),''])];
  const selected=state.commitment?commitmentOptions().find(x=>x.id===state.commitment.id):null;
  if(selected)lines.push('ACHC COMMITMENT',selected.title,selected.detail,'Category: '+({enable:'Enable now',coordinate:'Coordinate across services',preserve:'Preserve for the future'}[state.commitment.category]),'Operations: '+selected.operations,'Place: '+selected.place);
+ if(state.tradeoff?.lost?.length)lines.push('Earlier opening-day operating options deferred by later investment: '+state.tradeoff.lost.map(k=>WATERSHEDS[k].options.find(x=>x.id===state.watersheds[k])?.title||k).join('; '));
  lines.push('', 'WATERSHED DESIGN IMPLICATIONS',...watershedDesignNotes().map(x=>'- '+x),`Reserve used: ${state.reserveApplied?'Yes':'No'}`);
  const value=lines.join('\n');
  const msg=document.getElementById('msg');
@@ -682,13 +723,15 @@ app.addEventListener('click',e=>{
     case 'moment-back':momentView.step='explore';renderMomentDialog();break;
     case 'choose':choose(btn.dataset.decision,btn.dataset.option);break;
     case 'continue-impact':continueImpact(Number(btn.dataset.step));break;
+    case 'tradeoff-next':{const n=state.tradeoff?.step||2;state.screen=`reveal${n}`;save();render();break;}
+    case 'tradeoff-reconsider':back(state.tradeoff?.step||2);break;
     case 'continue-reveal':continueReveal(Number(btn.dataset.step));break;
     case 'watershed-select':watershedSelect(btn.dataset.stage,btn.dataset.value);break;
     case 'watershed-confirm':watershedConfirm(Number(btn.dataset.step));break;
     case 'watershed-back':watershedBack(Number(btn.dataset.step));break;
     case 'shift-next':shiftNext(Number(btn.dataset.step));break;
     case 'shift-back':shiftBack(Number(btn.dataset.step));break;
-    case 'reserve-toggle':if(reserveAvailable()){state.reserveApplied=!state.reserveApplied;event('reserve_changed',{active:state.reserveApplied});render();}break;
+    case 'reserve-toggle':if(usableReserve()){state.reserveApplied=!state.reserveApplied;event('reserve_changed',{active:state.reserveApplied});render();}break;
     case 'return-impact':state.screen=`impact${Number(btn.dataset.step)}`;save();render();break;
     case 'back':back(Number(btn.dataset.step));break;
     case 'set-readiness':setReadiness();break;
